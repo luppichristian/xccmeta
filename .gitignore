@@ -1,0 +1,7 @@
+x64/
+.gitattributes
+.vs/
+.vscode/
+build/
+CMakeCache.txt
+CMakeSettings.txt

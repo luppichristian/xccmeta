@@ -1,0 +1,42 @@
+BasedOnStyle: Chromium
+ColumnLimit: '0'
+UseTab: Never
+BreakBeforeBraces: Attach
+BreakTemplateDeclarations: Leave
+SortIncludes: Never
+
+# Space and indentation
+IndentGotoLabels: 'true'
+SpaceAfterCStyleCast: 'false'
+SpaceBeforeCpp11BracedList: 'true'
+SpaceBeforeCtorInitializerColon: 'false'
+SpaceInEmptyParentheses: 'false'
+SpacesInContainerLiterals: 'true'
+SpacesInParentheses: 'false'
+SpacesInSquareBrackets: 'false'
+LambdaBodyIndentation: Signature
+IndentCaseLabels: 'true'
+IndentPPDirectives: AfterHash
+TabWidth: '2'
+IndentWidth: '2'
+BinPackArguments: false
+
+# Short stuff
+AllowShortCaseExpressionOnASingleLine: 'true'
+AllowShortCaseLabelsOnASingleLine: 'true'
+AllowShortFunctionsOnASingleLine: InlineOnly
+AllowShortIfStatementsOnASingleLine: Always
+AllowShortBlocksOnASingleLine: Always
+AllowShortLambdasOnASingleLine: All
+AllowShortLoopsOnASingleLine: 'true'
+AllowShortEnumsOnASingleLine: 'true'
+AllowShortNamespacesOnASingleLine: 'true'
+
+# Alignment
+AlignConsecutiveMacros: 'true'
+AlignTrailingComments: Always
+AlignAfterOpenBracket: 'true'
+AlignArrayOfStructures: Right
+AlignConsecutiveShortCaseStatements:
+  Enabled: true
+PointerAlignment: Left

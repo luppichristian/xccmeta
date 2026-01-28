@@ -29,7 +29,6 @@ namespace xccmeta {
   // By passing in a direct filepath, it will import that single file.
   class XCCMETA_API importer {
    public:
-    explicit importer();
     explicit importer(const std::string& wildcard);
     const std::vector<file>& get_files() const;
 

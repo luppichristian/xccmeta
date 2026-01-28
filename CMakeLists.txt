@@ -7,6 +7,8 @@ project(xccmeta VERSION 1.0.0 LANGUAGES CXX)
 
 option(XCCMETA_BUILD_SHARED "Build xccmeta as a shared library" OFF)
 option(XCCMETA_BUILD_TESTS "Build xccmeta tests" ON)
+option(XCCMETA_GOOGLE_TEST_FETCH "Fetch GoogleTest if not found" ON)
+option(XCCMETA_LLVM_FETCH "Fetch LLVM/Clang if not found" ON)
 
 #
 # C++ Standard
@@ -15,6 +17,49 @@ option(XCCMETA_BUILD_TESTS "Build xccmeta tests" ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+
+include(FetchContent)
+
+#
+# Find or Fetch LLVM/Clang
+#
+
+find_package(LLVM CONFIG QUIET)
+find_package(Clang CONFIG QUIET)
+
+if(LLVM_FOUND AND Clang_FOUND)
+    message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
+    message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
+    message(STATUS "Using ClangConfig.cmake in: ${Clang_DIR}")
+    set(XCCMETA_LIBCLANG_TARGET libclang)
+elseif(XCCMETA_LLVM_FETCH)
+    message(STATUS "LLVM/Clang not found, fetching from source (this may take a while)...")
+    
+    set(LLVM_ENABLE_PROJECTS "clang" CACHE STRING "" FORCE)
+    set(LLVM_TARGETS_TO_BUILD "X86" CACHE STRING "" FORCE)
+    set(LLVM_ENABLE_TERMINFO OFF CACHE BOOL "" FORCE)
+    set(LLVM_ENABLE_ZLIB OFF CACHE BOOL "" FORCE)
+    set(LLVM_ENABLE_ZSTD OFF CACHE BOOL "" FORCE)
+    set(LLVM_INCLUDE_TESTS OFF CACHE BOOL "" FORCE)
+    set(LLVM_INCLUDE_EXAMPLES OFF CACHE BOOL "" FORCE)
+    set(LLVM_INCLUDE_BENCHMARKS OFF CACHE BOOL "" FORCE)
+    set(LLVM_INCLUDE_DOCS OFF CACHE BOOL "" FORCE)
+    set(CLANG_INCLUDE_TESTS OFF CACHE BOOL "" FORCE)
+    set(CLANG_INCLUDE_DOCS OFF CACHE BOOL "" FORCE)
+    
+    FetchContent_Declare(
+        llvm-project
+        GIT_REPOSITORY https://github.com/llvm/llvm-project.git
+        GIT_TAG llvmorg-18.1.8
+        GIT_SHALLOW TRUE
+        SOURCE_SUBDIR llvm
+    )
+    FetchContent_MakeAvailable(llvm-project)
+    
+    set(XCCMETA_LIBCLANG_TARGET libclang)
+    set(LLVM_INCLUDE_DIRS ${llvm-project_SOURCE_DIR}/llvm/include ${llvm-project_BINARY_DIR}/include)
+    set(CLANG_INCLUDE_DIRS ${llvm-project_SOURCE_DIR}/clang/include ${llvm-project_BINARY_DIR}/tools/clang/include)
+endif()
 
 #
 # Library Sources
@@ -75,22 +120,43 @@ target_include_directories(${XCCMETA_TARGET}
 )
 
 #
+# Link libclang
+#
+
+target_include_directories(${XCCMETA_TARGET}
+    PRIVATE
+        ${LLVM_INCLUDE_DIRS}
+        ${CLANG_INCLUDE_DIRS}
+)
+
+target_link_libraries(${XCCMETA_TARGET}
+    PRIVATE
+        ${XCCMETA_LIBCLANG_TARGET}
+)
+
+#
 # Tests (Optional)
 #
 
 if(XCCMETA_BUILD_TESTS)
-    include(FetchContent)
+    find_package(GTest CONFIG QUIET)
     
-    FetchContent_Declare(
-        googletest
-        GIT_REPOSITORY https://github.com/google/googletest.git
-        GIT_TAG v1.14.0
-    )
-    
-    # For Windows: Prevent overriding the parent project's compiler/linker settings
-    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-    
-    FetchContent_MakeAvailable(googletest)
+    if(GTest_FOUND)
+        message(STATUS "Found GoogleTest")
+    elseif(XCCMETA_GOOGLE_TEST_FETCH)
+        message(STATUS "GoogleTest not found, fetching from source...")
+        
+        FetchContent_Declare(
+            googletest
+            GIT_REPOSITORY https://github.com/google/googletest.git
+            GIT_TAG v1.14.0
+        )
+        
+        # For Windows: Prevent overriding the parent project's compiler/linker settings
+        set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+        
+        FetchContent_MakeAvailable(googletest)
+    endif()
     
     enable_testing()
     

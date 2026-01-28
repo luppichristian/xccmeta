@@ -39,9 +39,6 @@ namespace xccmeta {
     return true;
   }
 
-  importer::importer() {
-  }
-
   importer::importer(const std::string& wildcard) {
     std::filesystem::path base_path = std::filesystem::path(wildcard).parent_path();
     std::string pattern = std::filesystem::path(wildcard).filename().string();

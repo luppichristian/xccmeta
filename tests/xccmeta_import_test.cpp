@@ -238,13 +238,6 @@ TEST(FileTest, PathWithSpecialCharacters) {
 // importer class tests
 // =============================================================================
 
-// Test default constructor creates empty importer
-TEST(ImporterTest, DefaultConstructorCreatesEmptyImporter) {
-  xccmeta::importer imp;
-
-  EXPECT_TRUE(imp.get_files().empty());
-}
-
 // Test importer with non-existent directory
 TEST(ImporterTest, NonExistentDirectoryThrowsOrEmpty) {
   // The implementation iterates over directory_iterator which may throw

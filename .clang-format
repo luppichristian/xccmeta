@@ -6,6 +6,7 @@ BreakTemplateDeclarations: Leave
 SortIncludes: Never
 
 # Space and indentation
+NamespaceIndentation: All
 IndentGotoLabels: 'true'
 SpaceAfterCStyleCast: 'false'
 SpaceBeforeCpp11BracedList: 'true'

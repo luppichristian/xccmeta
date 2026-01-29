@@ -295,14 +295,65 @@ namespace xccmeta {
       if (raw_comment_str && raw_comment_str[0] != '\0') {
         n->set_comment(raw_comment_str);
       }
-      clang_disposeString(raw_comment);
 
+      // Brief comment
       CXString brief_comment = clang_Cursor_getBriefCommentText(cursor);
       const char* brief_comment_str = clang_getCString(brief_comment);
       if (brief_comment_str && brief_comment_str[0] != '\0') {
         n->set_brief_comment(brief_comment_str);
       }
-      clang_disposeString(brief_comment);
+
+      // Parse tags from raw comment (e.g., Doxygen-style)
+      if (raw_comment_str && raw_comment_str[0] != '\0') {
+        std::string comment(raw_comment_str);
+
+        size_t i = 0;
+        while (i < comment.size()) {
+          if (comment[i] != '@') {
+            ++i;
+            continue;
+          }
+
+          // Parse tag name
+          size_t name_start = i + 1;
+          size_t name_end = name_start;
+          while (name_end < comment.size() && (std::isalnum(comment[name_end]) || comment[name_end] == '_')) {
+            ++name_end;
+          }
+
+          if (name_end == name_start) {
+            // Lone '@'
+            ++i;
+            continue;
+          }
+
+          std::string tag_expr = comment.substr(name_start, name_end - name_start);
+
+          // Optional arguments: @tag(...)
+          if (name_end < comment.size() && comment[name_end] == '(') {
+            size_t args_start = name_end + 1;
+            size_t j = args_start;
+            int depth = 1;
+
+            while (j < comment.size() && depth > 0) {
+              if (comment[j] == '(') depth++;
+              else if (comment[j] == ')')
+                depth--;
+              ++j;
+            }
+
+            if (depth == 0) {
+              tag_expr += "(" + comment.substr(args_start, (j - 1) - args_start) + ")";
+              name_end = j;  // consume ')'
+            }
+          }
+
+          n->add_tag(tag::parse(tag_expr));
+          i = name_end;
+        }
+      }
+
+      clang_disposeString(raw_comment);
     }
 
     // Check if cursor should be processed

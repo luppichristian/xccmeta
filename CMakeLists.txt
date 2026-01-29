@@ -7,6 +7,7 @@ project(xccmeta VERSION 1.0.0 LANGUAGES CXX)
 
 option(XCCMETA_BUILD_SHARED "Build xccmeta as a shared library" OFF)
 option(XCCMETA_BUILD_TESTS "Build xccmeta tests" ON)
+option(XCCMETA_BUILD_EXAMPLES "Build xccmeta examples" ON)
 option(XCCMETA_GOOGLE_TEST_FETCH "Fetch GoogleTest if not found" ON)
 option(XCCMETA_LLVM_FETCH "Fetch LLVM/Clang if not found" ON)
 
@@ -189,6 +190,30 @@ if(XCCMETA_BUILD_TESTS)
     
     include(GoogleTest)
     gtest_discover_tests(xccmeta-tests)
+endif()
+
+#
+# Examples (Optional)
+#
+
+if(XCCMETA_BUILD_EXAMPLES)
+    file(GLOB XCCMETA_EXAMPLE_SOURCES CONFIGURE_DEPENDS
+        ${CMAKE_CURRENT_SOURCE_DIR}/examples/*.cpp
+    )
+    
+    foreach(EXAMPLE_SOURCE ${XCCMETA_EXAMPLE_SOURCES})
+        get_filename_component(EXAMPLE_NAME ${EXAMPLE_SOURCE} NAME_WE)
+        add_executable(xccmeta-example-${EXAMPLE_NAME} ${EXAMPLE_SOURCE})
+        target_link_libraries(xccmeta-example-${EXAMPLE_NAME}
+            PRIVATE
+                ${XCCMETA_TARGET}
+        )
+        set_target_properties(xccmeta-example-${EXAMPLE_NAME} PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/examples
+        )
+    endforeach()
+    
+    message(STATUS "Building examples: ${XCCMETA_EXAMPLE_SOURCES}")
 endif()
 
 #

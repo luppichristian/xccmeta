@@ -59,6 +59,7 @@ namespace xccmeta {
    private:
     compile_warnings warnings;
     std::ofstream output_stream;
+    int indent_level = 0;
   };
 
 }  // namespace xccmeta

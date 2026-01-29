@@ -31,14 +31,15 @@ SOFTWARE.
 namespace xccmeta {
 
   // Represents a metadata tag extracted from source code
-  // e.g., [[xccmeta::tag_name(arg1, arg2)]]
-  // C/C++ allows for this kind of attribute syntax
+  // It can be of the following forms:
+  // e.g., // @tag_name(arg1, arg2) - Comment style
+  // [[xccmeta::tag_name(arg1, arg2)]] - Attribute style
   class XCCMETA_API tag {
    public:
     tag() = default;
     tag(const std::string& name, const std::vector<std::string>& args);
 
-    static tag parse(const std::string& to_parse);  // Excluding [[ and ]]
+    static tag parse(const std::string& to_parse);  // must stricly be in this format: "tag(arg1, arg2)"
 
     std::string get_args_combined() const;             // Combined args as a single string, e.g., "arg1, arg2"
     std::string get_full() const;                      // Full representation excluding [[ and ]], e.g., xccmeta::tag_name(arg1, arg2)

@@ -39,8 +39,22 @@ namespace xccmeta {
     done();
   }
 
+  generator& generator::indent() {
+    indent_level++;
+    return *this;
+  }
+
+  generator& generator::unindent() {
+    if (indent_level > 0)
+      indent_level--;
+    return *this;
+  }
+
   generator& generator::out(const std::string& data) {
     if (output_stream.is_open()) {
+      for (int i = 0; i < indent_level; ++i) {
+        output_stream << "    ";  // 4 spaces per indent level
+      }
       output_stream << data << '\n';
     }
     return *this;

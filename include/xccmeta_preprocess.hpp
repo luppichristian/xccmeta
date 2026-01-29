@@ -1,5 +1,6 @@
 #pragma once
 
+#include "xccmeta_compile_args.hpp"
 #include "xccmeta_import.hpp"
 
 namespace xccmeta {
@@ -8,10 +9,19 @@ namespace xccmeta {
   //
   class XCCMETA_API preprocessor_context {
    public:
-    preprocessor_context() = default;
-    preprocessor_context(const std::string& input);
+    preprocessor_context();
+    ~preprocessor_context();
+    preprocessor_context(const std::string& input, const compile_args& args = compile_args());
 
-    std::string apply(const std::string& to_preprocess) const;
+    // Move operations (needed for Pimpl with unique_ptr)
+    preprocessor_context(preprocessor_context&&) noexcept;
+    preprocessor_context& operator=(preprocessor_context&&) noexcept;
+
+    // Delete copy operations
+    preprocessor_context(const preprocessor_context&) = delete;
+    preprocessor_context& operator=(const preprocessor_context&) = delete;
+
+    std::string apply(const std::string& to_preprocess, const compile_args& args = compile_args()) const;
 
    private:
     struct internal_data;
@@ -24,8 +34,8 @@ namespace xccmeta {
   // 2. Uses the context to produce preprocessed content for each file.
   class XCCMETA_API preprocessor {
    public:
-    explicit preprocessor(const file& file);
-    explicit preprocessor(const std::vector<file>& files);
+    explicit preprocessor(const file& file, const compile_args& args = compile_args());
+    explicit preprocessor(const std::vector<file>& files, const compile_args& args = compile_args());
 
     const std::vector<std::string>& get_preprocessed_content() const;
     const preprocessor_context& get_context() const;

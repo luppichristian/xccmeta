@@ -31,7 +31,15 @@ if(LLVM_FOUND AND Clang_FOUND)
     message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
     message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
     message(STATUS "Using ClangConfig.cmake in: ${Clang_DIR}")
-    set(XCCMETA_LIBCLANG_TARGET libclang)
+    
+    # Map LLVM components
+    llvm_map_components_to_libnames(LLVM_LIBS Support Core)
+    set(XCCMETA_CLANG_LIBS
+        clangBasic
+        clangLex
+        clangFrontend
+        ${LLVM_LIBS}
+    )
 elseif(XCCMETA_LLVM_FETCH)
     message(STATUS "LLVM/Clang not found, fetching from source (this may take a while)...")
     
@@ -56,7 +64,13 @@ elseif(XCCMETA_LLVM_FETCH)
     )
     FetchContent_MakeAvailable(llvm-project)
     
-    set(XCCMETA_LIBCLANG_TARGET libclang)
+    set(XCCMETA_CLANG_LIBS
+        clangBasic
+        clangLex
+        clangFrontend
+        LLVMSupport
+        LLVMCore
+    )
     set(LLVM_INCLUDE_DIRS ${llvm-project_SOURCE_DIR}/llvm/include ${llvm-project_BINARY_DIR}/include)
     set(CLANG_INCLUDE_DIRS ${llvm-project_SOURCE_DIR}/clang/include ${llvm-project_BINARY_DIR}/tools/clang/include)
 endif()
@@ -131,7 +145,7 @@ target_include_directories(${XCCMETA_TARGET}
 
 target_link_libraries(${XCCMETA_TARGET}
     PRIVATE
-        ${XCCMETA_LIBCLANG_TARGET}
+        ${XCCMETA_CLANG_LIBS}
 )
 
 #

@@ -35,6 +35,7 @@ if(LLVM_FOUND AND Clang_FOUND)
     # Map LLVM components
     llvm_map_components_to_libnames(LLVM_LIBS Support Core)
     set(XCCMETA_CLANG_LIBS
+        libclang
         clangBasic
         clangLex
         clangFrontend
@@ -65,6 +66,7 @@ elseif(XCCMETA_LLVM_FETCH)
     FetchContent_MakeAvailable(llvm-project)
     
     set(XCCMETA_CLANG_LIBS
+        libclang
         clangBasic
         clangLex
         clangFrontend

@@ -22,6 +22,9 @@ namespace xccmeta {
 
     // Parse input source code with given compile arguments
     std::shared_ptr<node> parse(const std::string& input, const compile_args& args);
+
+    // Merge two AST nodes (e.g., from multiple translation units)
+    std::shared_ptr<node> merge(std::shared_ptr<node> a, std::shared_ptr<node> b, const compile_args& args);
   };
 
 }  // namespace xccmeta

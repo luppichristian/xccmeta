@@ -9,6 +9,7 @@ namespace xccmeta {
 
   class XCCMETA_API type_info {
     friend class parser;
+    friend class parser_impl;
     friend class node;
 
    public:

@@ -4,19 +4,6 @@
 
 namespace xccmeta {
 
-  // =============================================================================
-  // source_location implementation
-  // =============================================================================
-
-  std::string source_location::to_string() const {
-    if (!is_valid()) return "<invalid>";
-    return file + ":" + std::to_string(line) + ":" + std::to_string(column);
-  }
-
-  // =============================================================================
-  // node implementation
-  // =============================================================================
-
   node::node(node::private_key, kind k): kind_(k) {
   }
 

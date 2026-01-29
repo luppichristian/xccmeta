@@ -33,6 +33,7 @@ namespace xccmeta {
   // AST Node - represents a parsed declaration/definition
   class XCCMETA_API node : public std::enable_shared_from_this<node> {
     friend class parser;
+    friend class parser_impl;
     friend class type_info;
 
     // Private key for passkey idiom - allows make_shared while keeping constructors effectively private

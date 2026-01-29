@@ -33,4 +33,8 @@ namespace xccmeta {
     return result;
   }
 
+  const std::vector<compile_warnings::entry>& compile_warnings::get_warnings() const {
+    return warnings;
+  }
+
 }  // namespace xccmeta

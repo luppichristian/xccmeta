@@ -11,17 +11,19 @@ namespace xccmeta {
   // On MSVC it uses #pragma message, on GCC/Clang it uses #warning.
   class XCCMETA_API compile_warnings {
    public:
-    compile_warnings() = default;
-
-    compile_warnings& push(const std::string& message, source_location loc = {});
-    std::string build() const;
-
-   private:
     struct entry {
       std::string message;
       source_location loc;
     };
 
+    compile_warnings() = default;
+
+    compile_warnings& push(const std::string& message, source_location loc = {});
+    std::string build() const;
+
+    const std::vector<entry>& get_warnings() const;
+
+   private:
     std::vector<entry> warnings;
   };
 

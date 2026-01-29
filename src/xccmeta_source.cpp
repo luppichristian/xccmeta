@@ -1,4 +1,4 @@
-#include "xccmeta_source.hpp"
+#include "xccmeta/xccmeta_source.hpp"
 
 #include <algorithm>
 #include <sstream>

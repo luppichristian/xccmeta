@@ -1,5 +1,5 @@
-#include "xccmeta_source.hpp"
 #include <gtest/gtest.h>
+#include <xccmeta/xccmeta_source.hpp>
 
 #include <string>
 

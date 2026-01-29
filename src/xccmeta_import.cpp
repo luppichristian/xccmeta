@@ -1,4 +1,4 @@
-#include "xccmeta_import.hpp"
+#include "xccmeta/xccmeta_import.hpp"
 #include <fstream>
 
 namespace xccmeta {

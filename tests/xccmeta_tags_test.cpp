@@ -1,5 +1,5 @@
-#include "xccmeta_tags.hpp"
 #include <gtest/gtest.h>
+#include <xccmeta/xccmeta_tags.hpp>
 
 #include <string>
 #include <vector>

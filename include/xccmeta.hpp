@@ -1,6 +1,6 @@
 #pragma once
 
-#include "xccmeta_base.hpp"
-#include "xccmeta_import.hpp"
-#include "xccmeta_parser.hpp"
-#include "xccmeta_preprocess.hpp"
+#include "xccmeta/xccmeta_base.hpp"
+#include "xccmeta/xccmeta_import.hpp"
+#include "xccmeta/xccmeta_parser.hpp"
+#include "xccmeta/xccmeta_preprocess.hpp"

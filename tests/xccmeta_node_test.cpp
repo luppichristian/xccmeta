@@ -1,6 +1,6 @@
-#include "xccmeta_node.hpp"
 #include <gtest/gtest.h>
-#include "xccmeta_parser.hpp"
+#include <xccmeta/xccmeta_node.hpp>
+#include <xccmeta/xccmeta_parser.hpp>
 
 #include <algorithm>
 #include <string>

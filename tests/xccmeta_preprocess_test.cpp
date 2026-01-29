@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include <xccmeta_preprocess.hpp>
+#include <xccmeta/xccmeta_preprocess.hpp>
 
 #include <atomic>
 #include <chrono>

@@ -1,5 +1,5 @@
-#include "xccmeta_parser.hpp"
 #include <gtest/gtest.h>
+#include <xccmeta/xccmeta_parser.hpp>
 
 #include <algorithm>
 #include <string>

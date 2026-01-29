@@ -2,6 +2,15 @@
 
 A C/C++ metadata extraction library using libclang, designed for code parsing, reflection, and build pipeline integration.
 
+## Documentation
+
+📚 **[Full Documentation](docs/README.md)** | 📖 **[GitHub Wiki](../../wiki)**
+
+- [Installation Guide](docs/installation.md)
+- [Quick Start](docs/quickstart.md)
+- [API Reference](docs/api-reference.md)
+- [Examples](docs/examples.md)
+
 ## Features
 
 - **AST Parsing**: Parse C/C++ source code into a traversable Abstract Syntax Tree using libclang
@@ -13,6 +22,37 @@ A C/C++ metadata extraction library using libclang, designed for code parsing, r
 - **Code Generation**: Built-in generator utility for outputting processed metadata
 - **Cross-platform**: Windows, Linux, macOS support
 - **Flexible Linking**: Available as both static and shared library
+
+## Quick Example
+
+```cpp
+#include <xccmeta.hpp>
+
+int main() {
+    xccmeta::compile_args args = xccmeta::compile_args::modern_cxx();
+    xccmeta::parser parser;
+    
+    auto ast = parser.parse(R"(
+        struct [[xccmeta::reflect]] Player {
+            int health;
+            float speed;
+        };
+    )", args);
+    
+    // Find all reflected types
+    auto reflected = ast->find_descendants([](const auto& n) {
+        return n->has_tag("xccmeta::reflect");
+    });
+    
+    for (const auto& type : reflected) {
+        std::cout << "Type: " << type->get_name() << "\n";
+        for (const auto& field : type->get_fields()) {
+            std::cout << "  " << field->get_name() << ": " 
+                      << field->get_type().get_spelling() << "\n";
+        }
+    }
+}
+```
 
 ## Requirements
 
@@ -28,6 +68,16 @@ A C/C++ metadata extraction library using libclang, designed for code parsing, r
 | `XCCMETA_BUILD_TESTS` | `ON` | Build unit tests using Google Test |
 | `XCCMETA_LLVM_FETCH` | `ON` | Fetch LLVM/Clang via FetchContent if not found |
 | `XCCMETA_GOOGLE_TEST_FETCH` | `ON` | Fetch GoogleTest via FetchContent if not found |
+
+## Building
+
+```bash
+git clone https://github.com/yourusername/xccmeta.git
+cd xccmeta
+mkdir build && cd build
+cmake ..
+cmake --build .
+```
 
 ## License
 

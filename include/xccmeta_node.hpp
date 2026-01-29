@@ -1,6 +1,7 @@
 #pragma once
 
 #include "xccmeta_base.hpp"
+#include "xccmeta_source.hpp"
 #include "xccmeta_tags.hpp"
 #include "xccmeta_type_info.hpp"
 
@@ -27,24 +28,6 @@ namespace xccmeta {
     register_,
     auto_,
     thread_local_
-  };
-
-  // Source location information
-  struct XCCMETA_API source_location {
-    std::string file;
-    std::uint32_t line = 0;
-    std::uint32_t column = 0;
-    std::uint32_t offset = 0;
-
-    bool is_valid() const { return !file.empty() && line > 0; }
-    std::string to_string() const;
-  };
-
-  // Source range (start to end location)
-  struct XCCMETA_API source_range {
-    source_location start;
-    source_location end;
-    bool is_valid() const { return start.is_valid() && end.is_valid(); }
   };
 
   // AST Node - represents a parsed declaration/definition

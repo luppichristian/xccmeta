@@ -1,5 +1,11 @@
 #include "xccmeta_preprocess.hpp"
 
+// Suppress MSVC warning C4291 from LLVM/Clang headers
+#ifdef _MSC_VER
+#  pragma warning(push)
+#  pragma warning(disable : 4291)
+#endif
+
 #include <clang/Basic/Diagnostic.h>
 #include <clang/Basic/DiagnosticOptions.h>
 #include <clang/Basic/FileManager.h>
@@ -16,6 +22,10 @@
 #include <clang/Lex/PreprocessorOptions.h>
 #include <llvm/Support/MemoryBuffer.h>
 #include <llvm/TargetParser/Host.h>
+
+#ifdef _MSC_VER
+#  pragma warning(pop)
+#endif
 
 #include <sstream>
 
@@ -61,10 +71,205 @@ namespace xccmeta {
     auto diag_ids = llvm::makeIntrusiveRefCnt<DiagnosticIDs>();
     DiagnosticsEngine diagnostics(diag_ids, diag_opts.get(), diag_printer.release());
 
-    // Create language options
+    // Create language options - parse from args
     LangOptions lang_opts;
-    lang_opts.CPlusPlus = true;
-    lang_opts.CPlusPlus17 = true;
+
+    // Parse language and standard from args
+    bool is_cxx = true;  // Default to C++
+    bool is_objc = false;
+    int cxx_version = 17;  // Default to C++17
+    int c_version = 11;    // Default to C11
+
+    for (size_t i = 0; i < args.size(); ++i) {
+      const auto& arg = args[i];
+
+      // Check for -x language flag
+      if (arg == "-x" && i + 1 < args.size()) {
+        const auto& lang = args[i + 1];
+        if (lang == "c") {
+          is_cxx = false;
+          is_objc = false;
+        } else if (lang == "c++" || lang == "cxx") {
+          is_cxx = true;
+          is_objc = false;
+        } else if (lang == "objective-c") {
+          is_cxx = false;
+          is_objc = true;
+        } else if (lang == "objective-c++") {
+          is_cxx = true;
+          is_objc = true;
+        }
+        ++i;
+        continue;
+      }
+
+      // Check for -std= flag
+      if (arg.rfind("-std=", 0) == 0) {
+        std::string std_str = arg.substr(5);
+
+        // Parse C++ standards
+        if (std_str == "c++98" || std_str == "c++03") {
+          is_cxx = true;
+          cxx_version = 3;
+        } else if (std_str == "c++11" || std_str == "c++0x") {
+          is_cxx = true;
+          cxx_version = 11;
+        } else if (std_str == "c++14" || std_str == "c++1y") {
+          is_cxx = true;
+          cxx_version = 14;
+        } else if (std_str == "c++17" || std_str == "c++1z") {
+          is_cxx = true;
+          cxx_version = 17;
+        } else if (std_str == "c++20" || std_str == "c++2a") {
+          is_cxx = true;
+          cxx_version = 20;
+        } else if (std_str == "c++23" || std_str == "c++2b") {
+          is_cxx = true;
+          cxx_version = 23;
+        } else if (std_str == "c++26" || std_str == "c++2c") {
+          is_cxx = true;
+          cxx_version = 26;
+        }
+        // Parse C standards
+        else if (std_str == "c89" || std_str == "c90" || std_str == "iso9899:1990") {
+          is_cxx = false;
+          c_version = 89;
+        } else if (std_str == "c99" || std_str == "iso9899:1999") {
+          is_cxx = false;
+          c_version = 99;
+        } else if (std_str == "c11" || std_str == "iso9899:2011") {
+          is_cxx = false;
+          c_version = 11;
+        } else if (std_str == "c17" || std_str == "c18" || std_str == "iso9899:2017") {
+          is_cxx = false;
+          c_version = 17;
+        } else if (std_str == "c23" || std_str == "c2x") {
+          is_cxx = false;
+          c_version = 23;
+        }
+        // GNU extensions
+        else if (std_str == "gnu++98" || std_str == "gnu++03") {
+          is_cxx = true;
+          cxx_version = 3;
+          lang_opts.GNUMode = true;
+        } else if (std_str == "gnu++11" || std_str == "gnu++0x") {
+          is_cxx = true;
+          cxx_version = 11;
+          lang_opts.GNUMode = true;
+        } else if (std_str == "gnu++14" || std_str == "gnu++1y") {
+          is_cxx = true;
+          cxx_version = 14;
+          lang_opts.GNUMode = true;
+        } else if (std_str == "gnu++17" || std_str == "gnu++1z") {
+          is_cxx = true;
+          cxx_version = 17;
+          lang_opts.GNUMode = true;
+        } else if (std_str == "gnu++20" || std_str == "gnu++2a") {
+          is_cxx = true;
+          cxx_version = 20;
+          lang_opts.GNUMode = true;
+        } else if (std_str == "gnu++23" || std_str == "gnu++2b") {
+          is_cxx = true;
+          cxx_version = 23;
+          lang_opts.GNUMode = true;
+        } else if (std_str == "gnu89" || std_str == "gnu90") {
+          is_cxx = false;
+          c_version = 89;
+          lang_opts.GNUMode = true;
+        } else if (std_str == "gnu99") {
+          is_cxx = false;
+          c_version = 99;
+          lang_opts.GNUMode = true;
+        } else if (std_str == "gnu11") {
+          is_cxx = false;
+          c_version = 11;
+          lang_opts.GNUMode = true;
+        } else if (std_str == "gnu17" || std_str == "gnu18") {
+          is_cxx = false;
+          c_version = 17;
+          lang_opts.GNUMode = true;
+        } else if (std_str == "gnu23" || std_str == "gnu2x") {
+          is_cxx = false;
+          c_version = 23;
+          lang_opts.GNUMode = true;
+        }
+        continue;
+      }
+
+      // Parse other language-affecting flags
+      if (arg == "-fexceptions") {
+        lang_opts.Exceptions = true;
+        lang_opts.CXXExceptions = true;
+      } else if (arg == "-fno-exceptions") {
+        lang_opts.Exceptions = false;
+        lang_opts.CXXExceptions = false;
+      } else if (arg == "-frtti") {
+        lang_opts.RTTI = true;
+      } else if (arg == "-fno-rtti") {
+        lang_opts.RTTI = false;
+      } else if (arg == "-fmodules") {
+        lang_opts.Modules = true;
+      } else if (arg == "-fno-modules") {
+        lang_opts.Modules = false;
+      } else if (arg == "-fchar8_t") {
+        lang_opts.Char8 = true;
+      } else if (arg == "-fno-char8_t") {
+        lang_opts.Char8 = false;
+      } else if (arg == "-fcoroutines" || arg == "-fcoroutines-ts") {
+        lang_opts.Coroutines = true;
+      } else if (arg == "-fno-coroutines") {
+        lang_opts.Coroutines = false;
+      }
+    }
+
+    // Apply language settings based on parsed values
+    lang_opts.ObjC = is_objc;
+
+    if (is_cxx) {
+      lang_opts.CPlusPlus = true;
+      lang_opts.Bool = true;
+      lang_opts.CXXOperatorNames = true;
+
+      // Set C++ version flags
+      if (cxx_version >= 11) {
+        lang_opts.CPlusPlus11 = true;
+      }
+      if (cxx_version >= 14) {
+        lang_opts.CPlusPlus14 = true;
+      }
+      if (cxx_version >= 17) {
+        lang_opts.CPlusPlus17 = true;
+        lang_opts.AlignedAllocation = true;
+      }
+      if (cxx_version >= 20) {
+        lang_opts.CPlusPlus20 = true;
+        lang_opts.Char8 = true;
+        lang_opts.Coroutines = true;
+      }
+      if (cxx_version >= 23) {
+        lang_opts.CPlusPlus23 = true;
+      }
+      if (cxx_version >= 26) {
+        lang_opts.CPlusPlus26 = true;
+      }
+    } else {
+      // C language
+      lang_opts.CPlusPlus = false;
+
+      if (c_version >= 99) {
+        lang_opts.C99 = true;
+        lang_opts.Digraphs = true;
+      }
+      if (c_version >= 11) {
+        lang_opts.C11 = true;
+      }
+      if (c_version >= 17) {
+        lang_opts.C17 = true;
+      }
+      if (c_version >= 23) {
+        lang_opts.C23 = true;
+      }
+    }
 
     // Create target info
     auto target_opts = std::make_shared<TargetOptions>();

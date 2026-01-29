@@ -1,13 +1,16 @@
 # xccmeta
 
-A C/C++ metadata extraction library using libclang, designed for code preprocessing, reflection, and build pipeline integration.
+A C/C++ metadata extraction library using libclang, designed for code parsing, reflection, and build pipeline integration.
 
 ## Features
 
+- **AST Parsing**: Parse C/C++ source code into a traversable Abstract Syntax Tree using libclang
+- **Type Introspection**: Full type information including qualifiers, pointers, references, arrays, and size/alignment
+- **Attribute Extraction**: Extract custom `[[attributes]]` (tags) for metadata-driven code generation
 - **File Import**: Wildcard-based file importing for batch processing
-- **Preprocessing**: C/C++ preprocessing with macro expansion and include handling
-- **Attribute Parsing**: Extract custom `[[attributes]]` for metadata-driven code generation
-- **Struct Introspection**: (Coming soon) Enumerate struct/class members and types
+- **Preprocessing**: Optional C/C++ preprocessing with macro expansion and include handling
+- **AST Filtering**: Filter and collect nodes by kind, tags, or custom criteria
+- **Code Generation**: Built-in generator utility for outputting processed metadata
 - **Cross-platform**: Windows, Linux, macOS support
 - **Flexible Linking**: Available as both static and shared library
 
@@ -15,7 +18,7 @@ A C/C++ metadata extraction library using libclang, designed for code preprocess
 
 - CMake 3.19 or higher
 - C++20 compatible compiler
-- LLVM/Clang (automatically fetched if not found)
+- LLVM/Clang 18.x (automatically fetched if not found)
 
 ## Build Options
 

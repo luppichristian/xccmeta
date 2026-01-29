@@ -1385,6 +1385,161 @@ namespace {
   }
 
   // ============================================================================
+  // Preprocessor Handling Tests
+  // ============================================================================
+
+  TEST(ParserTest, ParseWithInlineDefine) {
+    xccmeta::parser p;
+    xccmeta::compile_args args = xccmeta::compile_args::modern_cxx();
+
+    // Test that #define in source is expanded
+    auto root = p.parse(R"(
+      #define VALUE 42
+      int x = VALUE;
+    )",
+                        args);
+
+    ASSERT_NE(root, nullptr);
+    auto var = find_child_by_name(root, "x");
+    ASSERT_NE(var, nullptr);
+    EXPECT_EQ(var->get_kind(), xccmeta::node::kind::variable_decl);
+  }
+
+  TEST(ParserTest, ParseWithUndefinedMacro) {
+    xccmeta::parser p;
+    xccmeta::compile_args args = xccmeta::compile_args::modern_cxx();
+
+    // Code inside #ifdef with undefined macro should be excluded
+    auto root = p.parse(R"(
+      #ifdef UNDEFINED_MACRO
+      void should_not_exist() {}
+      #endif
+      void should_exist() {}
+    )",
+                        args);
+
+    ASSERT_NE(root, nullptr);
+    EXPECT_EQ(find_child_by_name(root, "should_not_exist"), nullptr);
+    EXPECT_NE(find_child_by_name(root, "should_exist"), nullptr);
+  }
+
+  TEST(ParserTest, ParseWithIfElse) {
+    xccmeta::parser p;
+    xccmeta::compile_args args = xccmeta::compile_args::modern_cxx();
+    args.define("USE_FEATURE", "1");
+
+    auto root = p.parse(R"(
+      #if USE_FEATURE
+      void feature_enabled() {}
+      #else
+      void feature_disabled() {}
+      #endif
+    )",
+                        args);
+
+    ASSERT_NE(root, nullptr);
+    EXPECT_NE(find_child_by_name(root, "feature_enabled"), nullptr);
+    EXPECT_EQ(find_child_by_name(root, "feature_disabled"), nullptr);
+  }
+
+  TEST(ParserTest, ParseWithIfElif) {
+    xccmeta::parser p;
+    xccmeta::compile_args args = xccmeta::compile_args::modern_cxx();
+    args.define("VERSION", "2");
+
+    auto root = p.parse(R"(
+      #if VERSION == 1
+      void version_1() {}
+      #elif VERSION == 2
+      void version_2() {}
+      #else
+      void version_other() {}
+      #endif
+    )",
+                        args);
+
+    ASSERT_NE(root, nullptr);
+    EXPECT_EQ(find_child_by_name(root, "version_1"), nullptr);
+    EXPECT_NE(find_child_by_name(root, "version_2"), nullptr);
+    EXPECT_EQ(find_child_by_name(root, "version_other"), nullptr);
+  }
+
+  TEST(ParserTest, ParseWithFunctionMacro) {
+    xccmeta::parser p;
+    xccmeta::compile_args args = xccmeta::compile_args::modern_cxx();
+
+    // Test function-like macro expansion
+    auto root = p.parse(R"(
+      #define DECLARE_VAR(type, name) type name
+      DECLARE_VAR(int, my_var);
+    )",
+                        args);
+
+    ASSERT_NE(root, nullptr);
+    auto var = find_child_by_name(root, "my_var");
+    ASSERT_NE(var, nullptr);
+    EXPECT_EQ(var->get_kind(), xccmeta::node::kind::variable_decl);
+  }
+
+  TEST(ParserTest, ParseWithNestedMacros) {
+    xccmeta::parser p;
+    xccmeta::compile_args args = xccmeta::compile_args::modern_cxx();
+
+    auto root = p.parse(R"(
+      #define INNER 10
+      #define OUTER (INNER * 2)
+      int value = OUTER;
+    )",
+                        args);
+
+    ASSERT_NE(root, nullptr);
+    auto var = find_child_by_name(root, "value");
+    ASSERT_NE(var, nullptr);
+  }
+
+  TEST(ParserTest, ParseWithIfndef) {
+    xccmeta::parser p;
+    xccmeta::compile_args args = xccmeta::compile_args::modern_cxx();
+
+    auto root = p.parse(R"(
+      #ifndef NOT_DEFINED
+      void included_func() {}
+      #endif
+      #ifndef __cplusplus
+      void c_only_func() {}
+      #endif
+    )",
+                        args);
+
+    ASSERT_NE(root, nullptr);
+    // NOT_DEFINED is not defined, so included_func should exist
+    EXPECT_NE(find_child_by_name(root, "included_func"), nullptr);
+    // __cplusplus IS defined in C++ mode, so c_only_func should NOT exist
+    EXPECT_EQ(find_child_by_name(root, "c_only_func"), nullptr);
+  }
+
+  TEST(ParserTest, ParseWithUndefMacro) {
+    xccmeta::parser p;
+    xccmeta::compile_args args = xccmeta::compile_args::modern_cxx();
+
+    auto root = p.parse(R"(
+      #define TEMP_MACRO
+      #ifdef TEMP_MACRO
+      void before_undef() {}
+      #endif
+      #undef TEMP_MACRO
+      #ifdef TEMP_MACRO
+      void after_undef() {}
+      #endif
+    )",
+                        args);
+
+    ASSERT_NE(root, nullptr);
+    EXPECT_NE(find_child_by_name(root, "before_undef"), nullptr);
+    EXPECT_EQ(find_child_by_name(root, "after_undef"), nullptr);
+  }
+
+  // ============================================================================
   // Multiple Translation Units Simulation
   // ============================================================================
 

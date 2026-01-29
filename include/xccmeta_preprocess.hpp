@@ -5,6 +5,19 @@
 
 namespace xccmeta {
 
+  // ============================================================================
+  // IMPORTANT: This module is COMPLETELY OPTIONAL for most use cases.
+  //
+  // The parser (xccmeta_parser.hpp) internally uses libclang which already
+  // performs full C/C++ preprocessing before parsing. You do NOT need to
+  // preprocess input before calling parser::parse().
+  //
+  // This module is only useful when you need:
+  //   - The preprocessed source text itself (e.g., for display or debugging)
+  //   - To inspect macro expansions
+  //   - To share preprocessing context across multiple files
+  // ============================================================================
+
   // This class holds any state needed during preprocessing.
   //
   class XCCMETA_API preprocessor_context {

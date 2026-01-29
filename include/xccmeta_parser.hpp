@@ -5,6 +5,20 @@
 
 namespace xccmeta {
 
+  // The parser converts C/C++ source code into an AST (Abstract Syntax Tree).
+  //
+  // PREPROCESSOR HANDLING:
+  // The parser internally uses libclang which performs full C/C++ preprocessing
+  // before parsing. This means:
+  //   - #define macros are expanded
+  //   - #ifdef/#ifndef/#if/#elif/#else/#endif conditionals are evaluated
+  //   - #include directives are processed
+  //   - Macros defined via compile_args (e.g., args.define("FOO")) are respected
+  //
+  // Therefore, you do NOT need to preprocess the input before calling parse().
+  // The preprocessor module (xccmeta_preprocess.hpp) is completely optional and
+  // only useful if you need the preprocessed source text itself.
+  //
   class XCCMETA_API parser {
    public:
     parser() = default;

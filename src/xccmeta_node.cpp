@@ -55,10 +55,30 @@ namespace xccmeta {
     return std::any_of(tags_.begin(), tags_.end(), [&name](const tag& t) { return t.get_name() == name; });
   }
 
+  bool node::has_tags(const std::vector<std::string>& names) const {
+    for (const auto& name : names) {
+      if (has_tag(name)) return true;
+    }
+    return false;
+  }
+
   std::optional<tag> node::find_tag(const std::string& name) const {
     auto it = std::find_if(tags_.begin(), tags_.end(), [&name](const tag& t) { return t.get_name() == name; });
     if (it != tags_.end()) return *it;
     return std::nullopt;
+  }
+
+  std::vector<tag> node::find_tags(const std::vector<std::string>& names) const {
+    std::vector<tag> result;
+    for (const auto& t : tags_) {
+      for (const auto& name : names) {
+        if (t.get_name() == name) {
+          result.push_back(t);
+          break;
+        }
+      }
+    }
+    return result;
   }
 
   void node::add_child(node_ptr child) {
@@ -157,6 +177,111 @@ namespace xccmeta {
 
   std::vector<node_ptr> node::get_enum_constants() const {
     return get_children_by_kind(kind::enum_constant_decl);
+  }
+
+  // =============================================================================
+  // Tag-based child queries
+  // =============================================================================
+
+  std::vector<node_ptr> node::get_children_by_tag(const std::string& tag_name) const {
+    std::vector<node_ptr> result;
+    for (const auto& child : children_) {
+      if (child->has_tag(tag_name)) {
+        result.push_back(child);
+      }
+    }
+    return result;
+  }
+
+  std::vector<node_ptr> node::get_children_by_tags(const std::vector<std::string>& tag_names) const {
+    std::vector<node_ptr> result;
+    for (const auto& child : children_) {
+      for (const auto& tag_name : tag_names) {
+        if (child->has_tag(tag_name)) {
+          result.push_back(child);
+          break;  // Don't add the same child multiple times
+        }
+      }
+    }
+    return result;
+  }
+
+  std::vector<node_ptr> node::get_children_without_tag(const std::string& tag_name) const {
+    std::vector<node_ptr> result;
+    for (const auto& child : children_) {
+      if (!child->has_tag(tag_name)) {
+        result.push_back(child);
+      }
+    }
+    return result;
+  }
+
+  std::vector<node_ptr> node::get_children_without_tags(const std::vector<std::string>& tag_names) const {
+    std::vector<node_ptr> result;
+    for (const auto& child : children_) {
+      if (!child->has_tags(tag_names)) {
+        result.push_back(child);
+      }
+    }
+    return result;
+  }
+
+  node_ptr node::find_child_with_tag(const std::string& tag_name) const {
+    for (const auto& child : children_) {
+      if (child->has_tag(tag_name)) {
+        return child;
+      }
+    }
+    return nullptr;
+  }
+
+  node_ptr node::find_child_with_tags(const std::vector<std::string>& tag_names) const {
+    for (const auto& child : children_) {
+      if (child->has_tags(tag_names)) {
+        return child;
+      }
+    }
+    return nullptr;
+  }
+
+  node_ptr node::find_child_without_tag(const std::string& tag_name) const {
+    for (const auto& child : children_) {
+      if (!child->has_tag(tag_name)) {
+        return child;
+      }
+    }
+    return nullptr;
+  }
+
+  node_ptr node::find_child_without_tags(const std::vector<std::string>& tag_names) const {
+    for (const auto& child : children_) {
+      if (!child->has_tags(tag_names)) {
+        return child;
+      }
+    }
+    return nullptr;
+  }
+
+  // =============================================================================
+  // Parent tag queries
+  // =============================================================================
+
+  std::vector<tag> node::get_parent_tags() const {
+    std::vector<tag> result;
+    node_ptr parent = parent_.lock();
+    while (parent) {
+      const auto& parent_tags = parent->get_tags();
+      result.insert(result.end(), parent_tags.begin(), parent_tags.end());
+      parent = parent->get_parent();
+    }
+    return result;
+  }
+
+  std::vector<tag> node::get_all_tags() const {
+    std::vector<tag> result = tags_;  // Start with own tags
+    std::vector<tag> parent_tags = get_parent_tags();
+    result.insert(result.end(), parent_tags.begin(), parent_tags.end());
+    return result;
   }
 
   // =============================================================================

@@ -187,7 +187,9 @@ namespace xccmeta {
     // xccmeta tags (metadata annotations)
     const std::vector<tag>& get_tags() const { return tags_; }
     bool has_tag(const std::string& name) const;
+    bool has_tags(const std::vector<std::string>& names) const;  // Returns true if any of the tags are present
     std::optional<tag> find_tag(const std::string& name) const;
+    std::vector<tag> find_tags(const std::vector<std::string>& names) const;  // Find all tags matching any of the given names
 
     // Tree structure
     node_ptr get_parent() const { return parent_.lock(); }
@@ -225,6 +227,20 @@ namespace xccmeta {
 
     // Find child by name
     node_ptr find_child_by_name(const std::string& name) const;
+
+    // Tag-based child queries
+    std::vector<node_ptr> get_children_by_tag(const std::string& tag_name) const;                      // Get all children that have a specific tag
+    std::vector<node_ptr> get_children_by_tags(const std::vector<std::string>& tag_names) const;       // Get all children that have any of the specified tags
+    std::vector<node_ptr> get_children_without_tag(const std::string& tag_name) const;                 // Get all children that don't have a specific tag
+    std::vector<node_ptr> get_children_without_tags(const std::vector<std::string>& tag_names) const;  // Get all children that don't have any of the specified tags
+    node_ptr find_child_with_tag(const std::string& tag_name) const;                                   // Find the first child that has a specific tag
+    node_ptr find_child_with_tags(const std::vector<std::string>& tag_names) const;                    // Find the first child that has any of the specified tags
+    node_ptr find_child_without_tag(const std::string& tag_name) const;                                // Find the first child that doesn't have a specific tag
+    node_ptr find_child_without_tags(const std::vector<std::string>& tag_names) const;                 // Find the first child that doesn't have any of the specified tags
+
+    // Parent tag queries
+    std::vector<tag> get_parent_tags() const;  // Get all tags from parent nodes (walking up the tree)
+    std::vector<tag> get_all_tags() const;     // Get all tags (own tags + parent tags combined)
 
     // Convenience queries
     bool is_type_decl() const;                         // Is this a type declaration (class/struct/union/enum/typedef)?

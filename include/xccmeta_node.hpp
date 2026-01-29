@@ -7,11 +7,15 @@
 
 namespace xccmeta {
 
-  class node {
+  class XCCMETA_API node {
    public:
     enum class type {
       unknown,
       root,
+      namespace_,
+      class_,
+      struct_,
+
       // TODO: ...
     };
 

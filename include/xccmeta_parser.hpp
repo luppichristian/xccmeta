@@ -5,7 +5,7 @@
 
 namespace xccmeta {
 
-  class parser {
+  class XCCMETA_API parser {
    public:
     parser() = default;
     ~parser() = default;

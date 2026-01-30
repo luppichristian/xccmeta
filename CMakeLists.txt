@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.19)
-project(xccmeta VERSION 1.0.0 LANGUAGES CXX)
+project(xccmeta VERSION 1.0.0 LANGUAGES C CXX)
 
 #
 # Configuration Options

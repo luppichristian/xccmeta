@@ -57,12 +57,26 @@ jobs:
         sudo ./llvm.sh 18
         sudo apt-get install -y llvm-18-dev libclang-18-dev clang-18 libgtest-dev
 
-    - name: Install dependencies (Windows)
+    - name: Setup LLVM (Windows)
       if: runner.os == 'Windows'
       run: |
-        choco install llvm --version=18.1.8 -y
-        echo "LLVM_DIR=C:\Program Files\LLVM" >> $env:GITHUB_ENV
-        echo "C:\Program Files\LLVM\bin" >> $env:GITHUB_PATH
+        # Use the pre-installed LLVM
+        $llvmPath = "C:\Program Files\LLVM"
+        if (Test-Path $llvmPath) {
+          echo "LLVM_DIR=$llvmPath" >> $env:GITHUB_ENV
+          echo "$llvmPath\bin" >> $env:GITHUB_PATH
+        } else {
+          # If not found in default location, try to find it
+          $llvmInstall = Get-ChildItem "C:\Program Files" -Filter "LLVM*" -Directory | Select-Object -First 1
+          if ($llvmInstall) {
+            echo "LLVM_DIR=$($llvmInstall.FullName)" >> $env:GITHUB_ENV
+            echo "$($llvmInstall.FullName)\bin" >> $env:GITHUB_PATH
+          } else {
+            Write-Error "LLVM not found"
+            exit 1
+          }
+        }
+      shell: powershell
 
     - name: Set LLVM paths (Ubuntu)
       if: runner.os == 'Linux'

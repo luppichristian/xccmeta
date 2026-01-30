@@ -6,7 +6,7 @@ A C/C++ metadata extraction library using libclang, designed for code parsing, r
 
 - **AST Parsing**: Parse C/C++ source code into a traversable Abstract Syntax Tree using libclang
 - **Type Introspection**: Full type information including qualifiers, pointers, references, arrays, and size/alignment
-- **Attribute Extraction**: Extract custom @attributes from doxygen like comments
+- **Tag Extraction**: Extract custom tags from comments or clang attributes
 - **File Import**: Wildcard-based file importing for batch processing
 - **Preprocessing**: Optional C/C++ preprocessing with macro expansion and include handling
 - **AST Filtering**: Filter and collect nodes by kind, tags, or custom criteria
@@ -32,7 +32,7 @@ A C/C++ metadata extraction library using libclang, designed for code parsing, r
 ## Building
 
 ```bash
-git clone https://github.com/yourusername/xccmeta.git
+git clone https://github.com/luppichristian/xccmeta.git
 cd xccmeta
 mkdir build && cd build
 cmake ..

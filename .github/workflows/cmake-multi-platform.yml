@@ -51,6 +51,10 @@ jobs:
       if: runner.os == 'Linux'
       run: |
         sudo apt-get update
+        sudo apt-get install -y wget lsb-release software-properties-common
+        wget https://apt.llvm.org/llvm.sh
+        chmod +x llvm.sh
+        sudo ./llvm.sh 18
         sudo apt-get install -y libllvm-18-dev libclang-18-dev libgtest-dev
 
     - name: Cache dependencies

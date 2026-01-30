@@ -47,6 +47,18 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - name: Install dependencies (Ubuntu)
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libllvm-18-dev libclang-18-dev libgtest-dev
+
+    - name: Cache dependencies
+      uses: actions/cache@v4
+      with:
+        path: ${{ github.workspace }}/build/_deps
+        key: deps-${{ runner.os }}-${{ matrix.c_compiler }}-${{ hashFiles('CMakeLists.txt') }}
+
     - name: Set reusable strings
       # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
       id: strings

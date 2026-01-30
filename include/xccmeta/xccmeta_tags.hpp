@@ -31,9 +31,33 @@ SOFTWARE.
 namespace xccmeta {
 
   // Represents a metadata tag extracted from source code
-  // It can be of the following forms:
-  // e.g., // @tag_name(arg1, arg2) - Comment style
-  // [[xccmeta::tag_name(arg1, arg2)]] - Attribute style
+  // Tags can be defined in two ways: comment style or attribute style.
+  // 1) Comment Style: Tags are embedded within comments using a specific syntax.
+  //    ===============================================================================
+  //    Example 1:
+  //    /// @tag_name(arg1, arg2)
+  //    struct MyStruct {};
+  //    The tag is directly associated with the subsequent code element.
+  //    ===============================================================================
+  //    Example 2:
+  //    They can also be defined in the same line:
+  //    struct MyStruct {}; ///< @tag_name(arg1, arg2)
+  //    ===============================================================================
+  // 2) Attribute Style: Tags are defined using clang annotations.
+  //    ===============================================================================
+  //    Example:
+  //    struct [[clang::annotate("example")]] MyStruct {};
+  //    ===============================================================================
+  // <!> NOTICE <!>: Comment style tags dont work for niche cases like template arguments or function parameters. (libclang limitation)
+  // Its best to always tag the main declaration of a code element.
+  // If you really need to tag such niche cases, use attribute style tags (but they are not guaranteed to be very portable).
+  //    ===============================================================================
+  // <!> WARNING <!>: Arguments should always be simple literals (e.g., numbers, strings) without nested structures.
+  // Complex expressions or nested parentheses in arguments may lead to incorrect parsing.
+  // They should be always specified as follows: tag_name(arg1, arg2, "string_arg", 42)
+  // Named arguments are **NOT** supported: tag_name(arg1=value1, arg2=value2)
+  //    ===============================================================================
+
   class XCCMETA_API tag {
    public:
     tag() = default;

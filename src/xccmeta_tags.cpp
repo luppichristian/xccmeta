@@ -39,8 +39,6 @@ namespace xccmeta {
 
   tag tag::parse(const std::string& to_parse) {
     tag result;
-    // Parsing logic to extract name and args from to_parse
-    // Expected format: xccmeta::tag_name(arg1, arg2, "string, with, commas")
     auto paren_pos = to_parse.find('(');
     if (paren_pos == std::string::npos) {
       result.name = trim(to_parse);
@@ -48,12 +46,12 @@ namespace xccmeta {
     }
 
     result.name = trim(to_parse.substr(0, paren_pos));
-    auto args_str = to_parse.substr(paren_pos + 1, to_parse.length() - paren_pos - 2);  // Exclude closing ')'
+    auto args_str = to_parse.substr(paren_pos + 1, to_parse.length() - paren_pos - 2);
 
-    // Split args_str by commas, respecting quoted strings
     size_t start = 0;
     bool in_string = false;
     char quote_char = '\0';
+    int paren_depth = 0;  // Track nested parentheses
 
     for (size_t i = 0; i < args_str.length(); ++i) {
       char c = args_str[i];
@@ -69,8 +67,17 @@ namespace xccmeta {
         }
       }
 
-      // Split on comma only if not inside a string
-      if (c == ',' && !in_string) {
+      // Track parentheses depth (only when not in a string)
+      if (!in_string) {
+        if (c == '(') {
+          paren_depth++;
+        } else if (c == ')') {
+          paren_depth--;
+        }
+      }
+
+      // Split on comma only if not inside a string AND at depth 0
+      if (c == ',' && !in_string && paren_depth == 0) {
         std::string arg = args_str.substr(start, i - start);
         result.args.push_back(trim(arg));
         start = i + 1;

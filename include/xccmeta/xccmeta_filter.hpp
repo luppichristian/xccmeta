@@ -54,7 +54,7 @@ namespace xccmeta {
       node_inclusion parent_node_inclusion = node_inclusion::exclude;
     };
 
-    filter(const config& cfg = {});
+    filter(const config& cfg = config {});
 
     // Go over all types and remove any that don't meet the criteria
     filter& clean();

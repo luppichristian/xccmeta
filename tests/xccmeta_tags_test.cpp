@@ -316,8 +316,8 @@ namespace {
     EXPECT_EQ(t.get_name(), "xccmeta::config");
     ASSERT_EQ(t.get_args().size(), 3);
     EXPECT_EQ(t.get_args()[0], "option1");
-    EXPECT_EQ(t.get_args()[1], " option2");
-    EXPECT_EQ(t.get_args()[2], " option3");
+    EXPECT_EQ(t.get_args()[1], "option2");
+    EXPECT_EQ(t.get_args()[2], "option3");
   }
 
   // Test parse with numeric arguments

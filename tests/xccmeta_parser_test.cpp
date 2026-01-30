@@ -1602,4 +1602,671 @@ namespace {
     EXPECT_NE(widget, nullptr);
   }
 
+  // ============================================================================
+  // Tag Extraction Tests
+  // ============================================================================
+
+  TEST(ParserTest, ParseSimpleTagOnVariable) {
+    xccmeta::parser p;
+    xccmeta::compile_args args = xccmeta::compile_args::modern_cxx();
+
+    auto root = p.parse(R"(
+      /// @serialize
+      int value = 42;
+    )",
+                        args);
+
+    ASSERT_NE(root, nullptr);
+    auto var = find_child_by_name(root, "value");
+    ASSERT_NE(var, nullptr);
+    EXPECT_TRUE(var->has_tag("serialize"));
+    EXPECT_EQ(var->get_tags().size(), 1);
+    EXPECT_EQ(var->get_tags()[0].get_name(), "serialize");
+  }
+
+  TEST(ParserTest, ParseTagWithArguments) {
+    xccmeta::parser p;
+    xccmeta::compile_args args = xccmeta::compile_args::modern_cxx();
+
+    auto root = p.parse(R"(
+      /// @config(key, value)
+      std::string setting;
+    )",
+                        args);
+
+    ASSERT_NE(root, nullptr);
+    auto var = find_child_by_name(root, "setting");
+    ASSERT_NE(var, nullptr);
+    EXPECT_TRUE(var->has_tag("config"));
+    auto tag = var->find_tag("config");
+    ASSERT_TRUE(tag.has_value());
+    EXPECT_EQ(tag->get_name(), "config");
+    EXPECT_EQ(tag->get_args().size(), 2);
+    EXPECT_EQ(tag->get_args()[0], "key");
+    EXPECT_EQ(tag->get_args()[1], "value");
+    EXPECT_EQ(tag->get_args_combined(), "key, value");
+  }
+
+  TEST(ParserTest, ParseMultipleTagsOnSameDeclaration) {
+    xccmeta::parser p;
+    xccmeta::compile_args args = xccmeta::compile_args::modern_cxx();
+
+    auto root = p.parse(R"(
+      /// @serialize
+      /// @validate(0, 100)
+      /// @description("A percentage value")
+      int percentage = 50;
+    )",
+                        args);
+
+    ASSERT_NE(root, nullptr);
+    auto var = find_child_by_name(root, "percentage");
+    ASSERT_NE(var, nullptr);
+    EXPECT_EQ(var->get_tags().size(), 3);
+    EXPECT_TRUE(var->has_tag("serialize"));
+    EXPECT_TRUE(var->has_tag("validate"));
+    EXPECT_TRUE(var->has_tag("description"));
+
+    auto validate_tag = var->find_tag("validate");
+    ASSERT_TRUE(validate_tag.has_value());
+    EXPECT_EQ(validate_tag->get_args().size(), 2);
+    EXPECT_EQ(validate_tag->get_args()[0], "0");
+    EXPECT_EQ(validate_tag->get_args()[1], "100");
+  }
+
+  TEST(ParserTest, ParseTagOnFunction) {
+    xccmeta::parser p;
+    xccmeta::compile_args args = xccmeta::compile_args::modern_cxx();
+
+    auto root = p.parse(R"(
+      /// @export
+      void process_data() {}
+    )",
+                        args);
+
+    ASSERT_NE(root, nullptr);
+    auto func = find_child_by_name(root, "process_data");
+    ASSERT_NE(func, nullptr);
+    EXPECT_TRUE(func->has_tag("export"));
+  }
+
+  TEST(ParserTest, ParseTagOnClass) {
+    xccmeta::parser p;
+    xccmeta::compile_args args = xccmeta::compile_args::modern_cxx();
+
+    auto root = p.parse(R"(
+      /// @reflect
+      class MyClass {
+        int field;
+      };
+    )",
+                        args);
+
+    ASSERT_NE(root, nullptr);
+    auto cls = find_child_by_name(root, "MyClass");
+    ASSERT_NE(cls, nullptr);
+    EXPECT_TRUE(cls->has_tag("reflect"));
+  }
+
+  TEST(ParserTest, ParseTagOnEnum) {
+    xccmeta::parser p;
+    xccmeta::compile_args args = xccmeta::compile_args::modern_cxx();
+
+    auto root = p.parse(R"(
+      /// @reflect
+      /// @flags
+      enum class Permissions {
+        Read = 1,
+        Write = 2,
+        Execute = 4
+      };
+    )",
+                        args);
+
+    ASSERT_NE(root, nullptr);
+    auto en = find_child_by_name(root, "Permissions");
+    ASSERT_NE(en, nullptr);
+    EXPECT_TRUE(en->has_tag("reflect"));
+    EXPECT_TRUE(en->has_tag("flags"));
+    EXPECT_EQ(en->get_tags().size(), 2);
+  }
+
+  TEST(ParserTest, ParseTagOnClassField) {
+    xccmeta::parser p;
+    xccmeta::compile_args args = xccmeta::compile_args::modern_cxx();
+
+    auto root = p.parse(R"(
+      class Person {
+      public:
+        /// @required
+        std::string name;
+        /// @optional
+        int age;
+      };
+    )",
+                        args);
+
+    ASSERT_NE(root, nullptr);
+    auto cls = find_child_by_name(root, "Person");
+    ASSERT_NE(cls, nullptr);
+
+    auto name_field = find_descendant_by_name(cls, "name");
+    auto age_field = find_descendant_by_name(cls, "age");
+
+    ASSERT_NE(name_field, nullptr);
+    ASSERT_NE(age_field, nullptr);
+
+    EXPECT_TRUE(name_field->has_tag("required"));
+    EXPECT_TRUE(age_field->has_tag("optional"));
+  }
+
+  TEST(ParserTest, ParseTagOnClassMethod) {
+    xccmeta::parser p;
+    xccmeta::compile_args args = xccmeta::compile_args::modern_cxx();
+
+    auto root = p.parse(R"(
+      class Calculator {
+      public:
+        /// @operation(add)
+        int add(int a, int b) { return a + b; }
+        /// @operation(subtract)
+        int subtract(int a, int b) { return a - b; }
+      };
+    )",
+                        args);
+
+    ASSERT_NE(root, nullptr);
+    auto cls = find_child_by_name(root, "Calculator");
+    ASSERT_NE(cls, nullptr);
+
+    auto add_method = find_descendant_by_name(cls, "add");
+    auto sub_method = find_descendant_by_name(cls, "subtract");
+
+    ASSERT_NE(add_method, nullptr);
+    ASSERT_NE(sub_method, nullptr);
+
+    EXPECT_TRUE(add_method->has_tag("operation"));
+    EXPECT_TRUE(sub_method->has_tag("operation"));
+
+    auto add_tag = add_method->find_tag("operation");
+    ASSERT_TRUE(add_tag.has_value());
+    EXPECT_EQ(add_tag->get_args().size(), 1);
+    EXPECT_EQ(add_tag->get_args()[0], "add");
+  }
+
+  TEST(ParserTest, ParseTagOnNamespace) {
+    xccmeta::parser p;
+    xccmeta::compile_args args = xccmeta::compile_args::modern_cxx();
+
+    auto root = p.parse(R"(
+      /// @module(math)
+      namespace math {
+        /// @constant
+        const double PI = 3.14159;
+      }
+    )",
+                        args);
+
+    ASSERT_NE(root, nullptr);
+    auto ns = find_child_by_name(root, "math");
+    ASSERT_NE(ns, nullptr);
+    EXPECT_TRUE(ns->has_tag("module"));
+
+    auto pi_const = find_descendant_by_name(ns, "PI");
+    ASSERT_NE(pi_const, nullptr);
+    EXPECT_TRUE(pi_const->has_tag("constant"));
+  }
+
+  TEST(ParserTest, ParseTagOnTemplate) {
+    xccmeta::parser p;
+    xccmeta::compile_args args = xccmeta::compile_args::modern_cxx();
+
+    auto root = p.parse(R"(
+      /// @container
+      template<typename T>
+      class Vector {
+        /// @size
+        size_t size_;
+      };
+    )",
+                        args);
+
+    ASSERT_NE(root, nullptr);
+    auto tmpl = find_child_by_name(root, "Vector");
+    ASSERT_NE(tmpl, nullptr);
+    EXPECT_TRUE(tmpl->has_tag("container"));
+
+    auto size_field = find_descendant_by_name(tmpl, "size_");
+    ASSERT_NE(size_field, nullptr);
+    EXPECT_TRUE(size_field->has_tag("size"));
+  }
+
+  TEST(ParserTest, ParseTagWithEmptyArgs) {
+    xccmeta::parser p;
+    xccmeta::compile_args args = xccmeta::compile_args::modern_cxx();
+
+    auto root = p.parse(R"(
+      /// @readonly()
+      int constant = 42;
+    )",
+                        args);
+
+    ASSERT_NE(root, nullptr);
+    auto var = find_child_by_name(root, "constant");
+    ASSERT_NE(var, nullptr);
+    EXPECT_TRUE(var->has_tag("readonly"));
+    auto tag = var->find_tag("readonly");
+    ASSERT_TRUE(tag.has_value());
+    EXPECT_TRUE(tag->get_args().empty());
+    EXPECT_EQ(tag->get_args_combined(), "");
+  }
+
+  TEST(ParserTest, ParseMultipleDeclarationsWithTags) {
+    xccmeta::parser p;
+    xccmeta::compile_args args = xccmeta::compile_args::modern_cxx();
+
+    auto root = p.parse(R"(
+      /// @global
+      int global_var = 0;
+
+      /// @helper
+      void helper_func() {}
+
+      /// @data
+      struct Data {
+        /// @field
+        int value;
+      };
+    )",
+                        args);
+
+    ASSERT_NE(root, nullptr);
+
+    auto global_var = find_child_by_name(root, "global_var");
+    auto helper_func = find_child_by_name(root, "helper_func");
+    auto data_struct = find_child_by_name(root, "Data");
+
+    ASSERT_NE(global_var, nullptr);
+    ASSERT_NE(helper_func, nullptr);
+    ASSERT_NE(data_struct, nullptr);
+
+    EXPECT_TRUE(global_var->has_tag("global"));
+    EXPECT_TRUE(helper_func->has_tag("helper"));
+    EXPECT_TRUE(data_struct->has_tag("data"));
+
+    auto value_field = find_descendant_by_name(data_struct, "value");
+    ASSERT_NE(value_field, nullptr);
+    EXPECT_TRUE(value_field->has_tag("field"));
+  }
+
+  TEST(ParserTest, ParseTagFindTagsMethod) {
+    xccmeta::parser p;
+    xccmeta::compile_args args = xccmeta::compile_args::modern_cxx();
+
+    auto root = p.parse(R"(
+      /// @api
+      /// @deprecated
+      /// @version(1.0)
+      void old_function() {}
+    )",
+                        args);
+
+    ASSERT_NE(root, nullptr);
+    auto func = find_child_by_name(root, "old_function");
+    ASSERT_NE(func, nullptr);
+
+    // Test find_tags with single name
+    auto api_tags = func->find_tags({"api"});
+    EXPECT_EQ(api_tags.size(), 1);
+    EXPECT_EQ(api_tags[0].get_name(), "api");
+
+    // Test find_tags with multiple names
+    auto multiple_tags = func->find_tags({"api", "deprecated"});
+    EXPECT_EQ(multiple_tags.size(), 2);
+
+    // Test has_tags (any of the names)
+    EXPECT_TRUE(func->has_tags({"api", "removed"}));         // has api
+    EXPECT_TRUE(func->has_tags({"removed", "deprecated"}));  // has deprecated
+    EXPECT_FALSE(func->has_tags({"removed", "obsolete"}));   // has neither
+  }
+
+  TEST(ParserTest, ParseTagOnTypedef) {
+    xccmeta::parser p;
+    xccmeta::compile_args args = xccmeta::compile_args::modern_cxx();
+
+    auto root = p.parse(R"(
+      /// @alias
+      typedef unsigned long long uint64_t;
+    )",
+                        args);
+
+    ASSERT_NE(root, nullptr);
+    auto td = find_child_by_name(root, "uint64_t");
+    ASSERT_NE(td, nullptr);
+    EXPECT_TRUE(td->has_tag("alias"));
+  }
+
+  TEST(ParserTest, ParseTagOnTypeAlias) {
+    xccmeta::parser p;
+    xccmeta::compile_args args = xccmeta::compile_args::modern_cxx();
+
+    auto root = p.parse(R"(
+      /// @alias
+      using Funky = int;
+    )",
+                        args);
+
+    ASSERT_NE(root, nullptr);
+    auto alias = find_child_by_name(root, "Funky");
+    ASSERT_NE(alias, nullptr);
+    EXPECT_TRUE(alias->has_tag("alias"));
+  }
+
+  TEST(ParserTest, ParseTagOnUnion) {
+    xccmeta::parser p;
+    xccmeta::compile_args args = xccmeta::compile_args::modern_cxx();
+
+    auto root = p.parse(R"(
+      /// @variant
+      union Variant {
+        int i;
+        float f;
+      };
+    )",
+                        args);
+
+    ASSERT_NE(root, nullptr);
+    auto un = find_child_by_name(root, "Variant");
+    ASSERT_NE(un, nullptr);
+    EXPECT_TRUE(un->has_tag("variant"));
+  }
+
+  TEST(ParserTest, ParseTagWithSpecialCharactersInArgs) {
+    xccmeta::parser p;
+    xccmeta::compile_args args = xccmeta::compile_args::modern_cxx();
+
+    auto root = p.parse(R"(
+      /// @pattern("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
+      std::string email;
+    )",
+                        args);
+
+    ASSERT_NE(root, nullptr);
+    auto var = find_child_by_name(root, "email");
+    ASSERT_NE(var, nullptr);
+    EXPECT_TRUE(var->has_tag("pattern"));
+    auto tag = var->find_tag("pattern");
+    ASSERT_TRUE(tag.has_value());
+    EXPECT_EQ(tag->get_args().size(), 1);
+    EXPECT_EQ(tag->get_args()[0], "\"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$\"");
+  }
+
+  TEST(ParserTest, ParseTagFiltering) {
+    xccmeta::parser p;
+    xccmeta::compile_args args = xccmeta::compile_args::modern_cxx();
+
+    auto root = p.parse(R"(
+      /// @export
+      void public_func() {}
+
+      /// @internal
+      void private_func() {}
+
+      /// @export
+      class PublicClass {};
+
+      /// @internal
+      class PrivateClass {};
+    )",
+                        args);
+
+    ASSERT_NE(root, nullptr);
+
+    // Find all nodes with @export tag
+    auto exported_nodes = root->find_descendants([](const xccmeta::node_ptr& n) {
+      return n->has_tag("export");
+    });
+
+    // Find all nodes with @internal tag
+    auto internal_nodes = root->find_descendants([](const xccmeta::node_ptr& n) {
+      return n->has_tag("internal");
+    });
+
+    EXPECT_EQ(exported_nodes.size(), 2);  // public_func and PublicClass
+    EXPECT_EQ(internal_nodes.size(), 2);  // private_func and PrivateClass
+
+    // Verify the names
+    std::vector<std::string> exported_names;
+    for (const auto& node : exported_nodes) {
+      exported_names.push_back(node->get_name());
+    }
+    std::sort(exported_names.begin(), exported_names.end());
+    EXPECT_EQ(exported_names, std::vector<std::string>({"PublicClass", "public_func"}));
+  }
+
+  TEST(ParserTest, ParseTagOnConstructor) {
+    xccmeta::parser p;
+    xccmeta::compile_args args = xccmeta::compile_args::modern_cxx();
+
+    auto root = p.parse(R"(
+      class MyClass {
+      public:
+        /// @default
+        MyClass() = default;
+      };
+    )",
+                        args);
+
+    ASSERT_NE(root, nullptr);
+    auto cls = find_child_by_name(root, "MyClass");
+    ASSERT_NE(cls, nullptr);
+
+    auto ctor = find_child_by_kind(cls, xccmeta::node::kind::constructor_decl);
+    ASSERT_NE(ctor, nullptr);
+    EXPECT_TRUE(ctor->has_tag("default"));
+  }
+
+  TEST(ParserTest, ParseTagOnDestructor) {
+    xccmeta::parser p;
+    xccmeta::compile_args args = xccmeta::compile_args::modern_cxx();
+
+    auto root = p.parse(R"(
+      class MyClass {
+      public:
+        /// @cleanup
+        ~MyClass() {}
+      };
+    )",
+                        args);
+
+    ASSERT_NE(root, nullptr);
+    auto cls = find_child_by_name(root, "MyClass");
+    ASSERT_NE(cls, nullptr);
+
+    auto dtor = find_child_by_kind(cls, xccmeta::node::kind::destructor_decl);
+    ASSERT_NE(dtor, nullptr);
+    EXPECT_TRUE(dtor->has_tag("cleanup"));
+  }
+
+  TEST(ParserTest, ParseTagOnStaticMethod) {
+    xccmeta::parser p;
+    xccmeta::compile_args args = xccmeta::compile_args::modern_cxx();
+
+    auto root = p.parse(R"(
+      class Factory {
+      public:
+        /// @factory
+        static Factory* create() { return new Factory(); }
+      };
+    )",
+                        args);
+
+    ASSERT_NE(root, nullptr);
+    auto cls = find_child_by_name(root, "Factory");
+    ASSERT_NE(cls, nullptr);
+
+    auto create_method = find_descendant_by_name(cls, "create");
+    ASSERT_NE(create_method, nullptr);
+    EXPECT_TRUE(create_method->has_tag("factory"));
+    EXPECT_TRUE(create_method->is_static());
+  }
+
+  TEST(ParserTest, ParseTagOnVirtualMethod) {
+    xccmeta::parser p;
+    xccmeta::compile_args args = xccmeta::compile_args::modern_cxx();
+
+    auto root = p.parse(R"(
+      class Base {
+      public:
+        /// @interface
+        virtual void process() = 0;
+      };
+    )",
+                        args);
+
+    ASSERT_NE(root, nullptr);
+    auto cls = find_child_by_name(root, "Base");
+    ASSERT_NE(cls, nullptr);
+
+    auto method = find_descendant_by_name(cls, "process");
+    ASSERT_NE(method, nullptr);
+    EXPECT_TRUE(method->has_tag("interface"));
+    EXPECT_TRUE(method->is_pure_virtual());
+  }
+
+  TEST(ParserTest, ParseTagOnEnumConstant) {
+    xccmeta::parser p;
+    xccmeta::compile_args args = xccmeta::compile_args::modern_cxx();
+
+    auto root = p.parse(R"(
+      enum class Status {
+        /// @success
+        Ok = 0,
+        /// @error
+        Error = 1
+      };
+    )",
+                        args);
+
+    ASSERT_NE(root, nullptr);
+    auto en = find_child_by_name(root, "Status");
+    ASSERT_NE(en, nullptr);
+
+    auto ok_const = find_descendant_by_name(en, "Ok");
+    auto error_const = find_descendant_by_name(en, "Error");
+
+    ASSERT_NE(ok_const, nullptr);
+    ASSERT_NE(error_const, nullptr);
+
+    EXPECT_TRUE(ok_const->has_tag("success"));
+    EXPECT_TRUE(error_const->has_tag("error"));
+  }
+
+  TEST(ParserTest, ParseTagOnBitfield) {
+    xccmeta::parser p;
+    xccmeta::compile_args args = xccmeta::compile_args::modern_cxx();
+
+    auto root = p.parse(R"(
+      struct Flags {
+        /// @enabled
+        unsigned int feature1 : 1;
+        /// @disabled
+        unsigned int feature2 : 1;
+      };
+    )",
+                        args);
+
+    ASSERT_NE(root, nullptr);
+    auto st = find_child_by_name(root, "Flags");
+    ASSERT_NE(st, nullptr);
+
+    auto feature1 = find_descendant_by_name(st, "feature1");
+    auto feature2 = find_descendant_by_name(st, "feature2");
+
+    ASSERT_NE(feature1, nullptr);
+    ASSERT_NE(feature2, nullptr);
+
+    EXPECT_TRUE(feature1->has_tag("enabled"));
+    EXPECT_TRUE(feature2->has_tag("disabled"));
+    EXPECT_TRUE(feature1->is_bitfield());
+    EXPECT_TRUE(feature2->is_bitfield());
+  }
+
+  TEST(ParserTest, ParseTagOnFunctionParameter) {
+    xccmeta::parser p;
+    xccmeta::compile_args args = xccmeta::compile_args::modern_cxx();
+
+    auto root = p.parse(R"(
+      void func(
+        int param1 [[clang::annotate("input")]],
+        int& param2 [[clang::annotate("output")]]
+      ) {}
+    )",
+                        args);
+
+    ASSERT_NE(root, nullptr);
+    auto func = find_child_by_name(root, "func");
+    ASSERT_NE(func, nullptr);
+
+    auto params = func->get_parameters();
+    ASSERT_EQ(params.size(), 2);
+
+    EXPECT_TRUE(params[0]->has_tag("input"));
+    EXPECT_TRUE(params[1]->has_tag("output"));
+  }
+
+  TEST(ParserTest, ParseTagWithComplexArgs) {
+    xccmeta::parser p;
+    xccmeta::compile_args args = xccmeta::compile_args::modern_cxx();
+
+    auto root = p.parse(R"(
+      /// @validate(0,100,1,50)
+      int slider_value = 50;
+    )",
+                        args);
+
+    ASSERT_NE(root, nullptr);
+    auto var = find_child_by_name(root, "slider_value");
+    ASSERT_NE(var, nullptr);
+
+    auto tag = var->find_tag("validate");
+    ASSERT_TRUE(tag.has_value());
+    EXPECT_EQ(tag->get_args().size(), 4);
+    EXPECT_EQ(tag->get_args()[0], "0");
+    EXPECT_EQ(tag->get_args()[1], "100");
+    EXPECT_EQ(tag->get_args()[2], "1");
+    EXPECT_EQ(tag->get_args()[3], "50");
+  }
+
+  TEST(ParserTest, ParseTagOnMergedDeclarations) {
+    xccmeta::parser p;
+    xccmeta::compile_args args = xccmeta::compile_args::modern_cxx();
+
+    // First translation unit with tag
+    auto tu1 = p.parse(R"(
+      /// @interface
+      class Widget {
+      public:
+        virtual void draw() = 0;
+      };
+    )",
+                       args);
+
+    // Second translation unit without tag
+    auto tu2 = p.parse(R"(
+      class Widget {
+      public:
+        void draw() override {}
+      };
+    )",
+                       args);
+
+    auto merged = p.merge(tu1, tu2, args);
+
+    ASSERT_NE(merged, nullptr);
+    auto widget = find_descendant_by_name(merged, "Widget");
+    ASSERT_NE(widget, nullptr);
+    EXPECT_TRUE(widget->has_tag("interface"));
+  }
+
 }  // namespace

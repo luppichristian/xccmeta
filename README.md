@@ -2,15 +2,6 @@
 
 A C/C++ metadata extraction library using libclang, designed for code parsing, reflection, and build pipeline integration.
 
-## Documentation
-
-📚 **[Full Documentation](docs/README.md)** | 📖 **[GitHub Wiki](../../wiki)**
-
-- [Installation Guide](docs/installation.md)
-- [Quick Start](docs/quickstart.md)
-- [API Reference](docs/api-reference.md)
-- [Examples](docs/examples.md)
-
 ## Features
 
 - **AST Parsing**: Parse C/C++ source code into a traversable Abstract Syntax Tree using libclang

@@ -303,6 +303,21 @@ namespace xccmeta {
         n->set_brief_comment(brief_comment_str);
       }
 
+      // Parse tags from attributes (go over children)
+      clang_visitChildren(cursor, [](CXCursor c, CXCursor parent, CXClientData client_data) {
+        CXCursorKind kind = clang_getCursorKind(c);
+        if (kind == CXCursor_AnnotateAttr) {
+          CXString annotation = clang_getCursorSpelling(c);
+          const char* annotation_str = clang_getCString(annotation);
+          if (annotation_str && annotation_str[0] != '\0') {
+            node_ptr n = *static_cast<node_ptr*>(client_data);
+            n->add_tag(tag::parse(annotation_str));
+          }
+          clang_disposeString(annotation);
+        }
+
+        return CXChildVisit_Continue; }, &n);
+
       // Parse tags from raw comment (e.g., Doxygen-style)
       if (raw_comment_str && raw_comment_str[0] != '\0') {
         std::string comment(raw_comment_str);
@@ -463,7 +478,6 @@ namespace xccmeta {
     // Visitor callback
     static CXChildVisitResult visit_cursor(CXCursor cursor, CXCursor /* parent */, CXClientData client_data) {
       auto* ctx = static_cast<visitor_context*>(client_data);
-
       if (!should_process_cursor(cursor)) {
         return CXChildVisit_Recurse;
       }

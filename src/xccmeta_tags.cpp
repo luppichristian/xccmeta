@@ -26,34 +26,63 @@ SOFTWARE.
 
 namespace xccmeta {
 
+  // Helper function to trim whitespace from both ends of a string
+  static std::string trim(const std::string& str) {
+    size_t first = str.find_first_not_of(" \t\n\r\f\v");
+    if (first == std::string::npos) return "";
+    size_t last = str.find_last_not_of(" \t\n\r\f\v");
+    return str.substr(first, last - first + 1);
+  }
+
   tag::tag(const std::string& name, const std::vector<std::string>& args): name(name), args(args) {
   }
 
   tag tag::parse(const std::string& to_parse) {
     tag result;
     // Parsing logic to extract name and args from to_parse
-    // Expected format: xccmeta::tag_name(arg1, arg2)
+    // Expected format: xccmeta::tag_name(arg1, arg2, "string, with, commas")
     auto paren_pos = to_parse.find('(');
     if (paren_pos == std::string::npos) {
-      result.name = to_parse;
+      result.name = trim(to_parse);
       return result;
     }
 
-    result.name = to_parse.substr(0, paren_pos);
+    result.name = trim(to_parse.substr(0, paren_pos));
     auto args_str = to_parse.substr(paren_pos + 1, to_parse.length() - paren_pos - 2);  // Exclude closing ')'
 
-    // Split args_str by commas
+    // Split args_str by commas, respecting quoted strings
     size_t start = 0;
-    size_t end = args_str.find(',');
-    while (end != std::string::npos) {
-      result.args.push_back(args_str.substr(start, end - start));
-      start = end + 1;
-      end = args_str.find(',', start);
+    bool in_string = false;
+    char quote_char = '\0';
+
+    for (size_t i = 0; i < args_str.length(); ++i) {
+      char c = args_str[i];
+
+      // Handle quote characters
+      if ((c == '"' || c == '\'') && (i == 0 || args_str[i - 1] != '\\')) {
+        if (!in_string) {
+          in_string = true;
+          quote_char = c;
+        } else if (c == quote_char) {
+          in_string = false;
+          quote_char = '\0';
+        }
+      }
+
+      // Split on comma only if not inside a string
+      if (c == ',' && !in_string) {
+        std::string arg = args_str.substr(start, i - start);
+        result.args.push_back(trim(arg));
+        start = i + 1;
+      }
     }
+
     // Add the last argument
     if (start < args_str.length()) {
-      result.args.push_back(args_str.substr(start));
+      std::string arg = args_str.substr(start);
+      result.args.push_back(trim(arg));
     }
+
     return result;
   }
 

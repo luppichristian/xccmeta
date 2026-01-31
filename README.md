@@ -20,6 +20,10 @@ A C/C++ metadata extraction library using libclang, designed for code parsing, r
 - C++20 compatible compiler
 - LLVM/Clang 18.x (automatically fetched if not found)
 
+## Documentation
+
+See [docs/](docs/) for comprehensive API documentation and usage patterns.
+
 ## Build Options
 
 | Option | Default | Description |

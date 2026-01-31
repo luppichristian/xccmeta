@@ -22,7 +22,7 @@ A C/C++ metadata extraction library using libclang, designed for code parsing, r
 
 ## Documentation
 
-See [docs/](docs/) for comprehensive API documentation and usage patterns.
+See [docs](https://luppichristian.github.io/xccmeta/) for comprehensive API documentation and usage patterns.
 
 ## Build Options
 

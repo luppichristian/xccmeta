@@ -1,3 +1,8 @@
+---
+layout: default
+title: Common Patterns
+---
+
 # Common Patterns
 
 Recipes for frequent xccmeta tasks. Copy-paste starting points for typical workflows.

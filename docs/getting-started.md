@@ -1,16 +1,23 @@
+---
+layout: default
+title: Getting Started
+---
+
 # Getting Started
 
-## Purpose
+## Overview
 
 xccmeta is a libclang wrapper for C/C++ metadata extraction. It parses source code into a queryable AST, enabling reflection, code generation, and build pipeline integration.
 
-**Core use case:** Extract type information from tagged C++ declarations and generate boilerplate (serialization, string conversions, introspection).
+## Why Use This?
+
+Extract type information from tagged C++ declarations and generate boilerplate (serialization, string conversions, introspection) at build time without runtime overhead.
 
 ## Requirements
 
-- **CMake:** 3.19+
-- **Compiler:** C++20
-- **LLVM/Clang:** 18.x (auto-fetched if missing)
+- CMake 3.19+
+- C++20 compatible compiler
+- LLVM/Clang 18.x (auto-fetched if missing)
 
 ## Build
 

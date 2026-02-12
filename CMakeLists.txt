@@ -32,6 +32,8 @@ if(LLVM_FOUND AND Clang_FOUND)
     message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
     message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
     message(STATUS "Using ClangConfig.cmake in: ${Clang_DIR}")
+    message(STATUS "LLVM Include Dirs: ${LLVM_INCLUDE_DIRS}")
+    message(STATUS "Clang Include Dirs: ${CLANG_INCLUDE_DIRS}")
     
     # Map LLVM components
     llvm_map_components_to_libnames(LLVM_LIBS Support Core)
@@ -42,6 +44,18 @@ if(LLVM_FOUND AND Clang_FOUND)
         clangFrontend
         ${LLVM_LIBS}
     )
+    
+    # If include directories aren't set by find_package, derive them from LLVM_DIR
+    if(NOT LLVM_INCLUDE_DIRS)
+        get_filename_component(LLVM_INSTALL_PREFIX "${LLVM_DIR}/../../.." ABSOLUTE)
+        set(LLVM_INCLUDE_DIRS "${LLVM_INSTALL_PREFIX}/include")
+        message(STATUS "Derived LLVM Include Dir: ${LLVM_INCLUDE_DIRS}")
+    endif()
+    if(NOT CLANG_INCLUDE_DIRS)
+        get_filename_component(LLVM_INSTALL_PREFIX "${LLVM_DIR}/../../.." ABSOLUTE)
+        set(CLANG_INCLUDE_DIRS "${LLVM_INSTALL_PREFIX}/include")
+        message(STATUS "Derived Clang Include Dir: ${CLANG_INCLUDE_DIRS}")
+    endif()
 elseif(XCCMETA_LLVM_FETCH)
     message(STATUS "LLVM/Clang not found, fetching from source (this may take a while)...")
     

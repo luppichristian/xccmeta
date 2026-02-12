@@ -88,40 +88,96 @@ elseif(LLVM_FOUND)
     message(STATUS "LLVM Include Dirs: ${LLVM_INCLUDE_DIRS}")
     message(STATUS "Clang Include Dirs: ${CLANG_INCLUDE_DIRS}")
     message(STATUS "Clang Libraries: ${XCCMETA_CLANG_LIBS}")
-elseif(XCCMETA_LLVM_FETCH)
-    message(STATUS "LLVM/Clang not found, fetching from source (this may take a while)...")
-    
-    set(LLVM_ENABLE_PROJECTS "clang" CACHE STRING "" FORCE)
-    set(LLVM_TARGETS_TO_BUILD "X86" CACHE STRING "" FORCE)
-    set(LLVM_ENABLE_TERMINFO OFF CACHE BOOL "" FORCE)
-    set(LLVM_ENABLE_ZLIB OFF CACHE BOOL "" FORCE)
-    set(LLVM_ENABLE_ZSTD OFF CACHE BOOL "" FORCE)
-    set(LLVM_INCLUDE_TESTS OFF CACHE BOOL "" FORCE)
-    set(LLVM_INCLUDE_EXAMPLES OFF CACHE BOOL "" FORCE)
-    set(LLVM_INCLUDE_BENCHMARKS OFF CACHE BOOL "" FORCE)
-    set(LLVM_INCLUDE_DOCS OFF CACHE BOOL "" FORCE)
-    set(CLANG_INCLUDE_TESTS OFF CACHE BOOL "" FORCE)
-    set(CLANG_INCLUDE_DOCS OFF CACHE BOOL "" FORCE)
-    
-    FetchContent_Declare(
-        llvm-project
-        GIT_REPOSITORY https://github.com/llvm/llvm-project.git
-        GIT_TAG llvmorg-18.1.8
-        GIT_SHALLOW TRUE
-        SOURCE_SUBDIR llvm
+else()
+    # Neither LLVMConfig.cmake nor ClangConfig.cmake were found.
+    # Try manual detection from common install paths (e.g., Chocolatey LLVM on Windows).
+    set(_llvm_search_paths)
+    if(CMAKE_PREFIX_PATH)
+        list(APPEND _llvm_search_paths ${CMAKE_PREFIX_PATH})
+    endif()
+    if(DEFINED ENV{CMAKE_PREFIX_PATH})
+        list(APPEND _llvm_search_paths $ENV{CMAKE_PREFIX_PATH})
+    endif()
+    list(APPEND _llvm_search_paths
+        "C:/Program Files/LLVM"
+        "/usr/lib/llvm-18"
+        "/usr/local"
+        "/opt/homebrew/opt/llvm"
+        "/opt/homebrew/opt/llvm@18"
     )
-    FetchContent_MakeAvailable(llvm-project)
-    
-    set(XCCMETA_CLANG_LIBS
-        libclang
-        clangBasic
-        clangLex
-        clangFrontend
-        LLVMSupport
-        LLVMCore
+
+    find_path(XCCMETA_LLVM_INCLUDE_DIR
+        NAMES clang-c/Index.h
+        PATHS ${_llvm_search_paths}
+        PATH_SUFFIXES include
+        NO_DEFAULT_PATH
     )
-    set(LLVM_INCLUDE_DIRS ${llvm-project_SOURCE_DIR}/llvm/include ${llvm-project_BINARY_DIR}/include)
-    set(CLANG_INCLUDE_DIRS ${llvm-project_SOURCE_DIR}/clang/include ${llvm-project_BINARY_DIR}/tools/clang/include)
+    find_library(XCCMETA_LIBCLANG_LIB
+        NAMES libclang
+        PATHS ${_llvm_search_paths}
+        PATH_SUFFIXES lib
+        NO_DEFAULT_PATH
+    )
+
+    if(XCCMETA_LLVM_INCLUDE_DIR AND XCCMETA_LIBCLANG_LIB)
+        message(STATUS "Found LLVM/Clang via manual detection (no CMake config files):")
+        message(STATUS "  Include dir: ${XCCMETA_LLVM_INCLUDE_DIR}")
+        message(STATUS "  libclang:    ${XCCMETA_LIBCLANG_LIB}")
+
+        set(LLVM_INCLUDE_DIRS ${XCCMETA_LLVM_INCLUDE_DIR})
+        set(CLANG_INCLUDE_DIRS ${XCCMETA_LLVM_INCLUDE_DIR})
+        set(XCCMETA_CLANG_LIBS ${XCCMETA_LIBCLANG_LIB})
+
+        # Try to find additional Clang/LLVM static libraries (not always available)
+        get_filename_component(_llvm_lib_dir "${XCCMETA_LIBCLANG_LIB}" DIRECTORY)
+        foreach(_lib clangBasic clangLex clangFrontend LLVMSupport LLVMCore)
+            find_library(_found_manual_${_lib} NAMES ${_lib} HINTS ${_llvm_lib_dir})
+            if(_found_manual_${_lib})
+                list(APPEND XCCMETA_CLANG_LIBS ${_found_manual_${_lib}})
+            endif()
+        endforeach()
+
+        message(STATUS "  Libraries:   ${XCCMETA_CLANG_LIBS}")
+    elseif(XCCMETA_LLVM_FETCH)
+        message(STATUS "LLVM/Clang not found, fetching from source (this may take a while)...")
+
+        set(LLVM_ENABLE_PROJECTS "clang" CACHE STRING "" FORCE)
+        set(LLVM_TARGETS_TO_BUILD "X86" CACHE STRING "" FORCE)
+        set(LLVM_ENABLE_TERMINFO OFF CACHE BOOL "" FORCE)
+        set(LLVM_ENABLE_ZLIB OFF CACHE BOOL "" FORCE)
+        set(LLVM_ENABLE_ZSTD OFF CACHE BOOL "" FORCE)
+        set(LLVM_INCLUDE_TESTS OFF CACHE BOOL "" FORCE)
+        set(LLVM_INCLUDE_EXAMPLES OFF CACHE BOOL "" FORCE)
+        set(LLVM_INCLUDE_BENCHMARKS OFF CACHE BOOL "" FORCE)
+        set(LLVM_INCLUDE_DOCS OFF CACHE BOOL "" FORCE)
+        set(CLANG_INCLUDE_TESTS OFF CACHE BOOL "" FORCE)
+        set(CLANG_INCLUDE_DOCS OFF CACHE BOOL "" FORCE)
+
+        FetchContent_Declare(
+            llvm-project
+            GIT_REPOSITORY https://github.com/llvm/llvm-project.git
+            GIT_TAG llvmorg-18.1.8
+            GIT_SHALLOW TRUE
+            SOURCE_SUBDIR llvm
+        )
+        FetchContent_MakeAvailable(llvm-project)
+
+        set(XCCMETA_CLANG_LIBS
+            libclang
+            clangBasic
+            clangLex
+            clangFrontend
+            LLVMSupport
+            LLVMCore
+        )
+        set(LLVM_INCLUDE_DIRS ${llvm-project_SOURCE_DIR}/llvm/include ${llvm-project_BINARY_DIR}/include)
+        set(CLANG_INCLUDE_DIRS ${llvm-project_SOURCE_DIR}/clang/include ${llvm-project_BINARY_DIR}/tools/clang/include)
+    else()
+        message(FATAL_ERROR
+            "LLVM/Clang not found and XCCMETA_LLVM_FETCH is OFF.\n"
+            "Please install LLVM/Clang development packages, set CMAKE_PREFIX_PATH "
+            "to your LLVM installation, or enable XCCMETA_LLVM_FETCH.")
+    endif()
 endif()
 
 #

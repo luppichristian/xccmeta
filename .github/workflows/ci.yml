@@ -67,7 +67,10 @@ jobs:
     
     - name: Configure CMake
       run: |
-        cmake -B build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DXCCMETA_BUILD_TESTS=ON -DXCCMETA_LLVM_FETCH=OFF
+        $prefixPath = "${{ env.CMAKE_PREFIX_PATH }}"
+        $prefixArg = if ($prefixPath) { "-DCMAKE_PREFIX_PATH=$prefixPath" } else { "" }
+        cmake -B build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DXCCMETA_BUILD_TESTS=ON -DXCCMETA_LLVM_FETCH=OFF $prefixArg
+      shell: pwsh
     
     - name: Build
       run: cmake --build build --config ${{ matrix.build_type }}

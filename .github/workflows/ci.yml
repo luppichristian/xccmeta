@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    name: ${{ matrix.os }} - ${{ matrix.build_type }}
+    runs-on: ${{ matrix.os }}
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        build_type: [Debug, Release]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up CMake
+      uses: lukka/get-cmake@latest
+    
+    - name: Install LLVM/Clang on Ubuntu
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y llvm-18 llvm-18-dev libclang-18-dev clang-18
+        echo "LLVM_DIR=/usr/lib/llvm-18/lib/cmake/llvm" >> $GITHUB_ENV
+        echo "Clang_DIR=/usr/lib/llvm-18/lib/cmake/clang" >> $GITHUB_ENV
+    
+    - name: Install LLVM/Clang on macOS
+      if: runner.os == 'macOS'
+      run: |
+        brew install llvm@18
+        echo "LLVM_DIR=$(brew --prefix llvm@18)/lib/cmake/llvm" >> $GITHUB_ENV
+        echo "Clang_DIR=$(brew --prefix llvm@18)/lib/cmake/clang" >> $GITHUB_ENV
+        echo "$(brew --prefix llvm@18)/bin" >> $GITHUB_PATH
+    
+    - name: Install LLVM/Clang on Windows
+      if: runner.os == 'Windows'
+      run: |
+        choco install llvm --version=18.1.8 -y
+        echo "LLVM_DIR=C:/Program Files/LLVM/lib/cmake/llvm" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+        echo "Clang_DIR=C:/Program Files/LLVM/lib/cmake/clang" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+        echo "C:/Program Files/LLVM/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+    
+    - name: Configure CMake
+      run: |
+        cmake -B build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DXCCMETA_BUILD_TESTS=ON -DXCCMETA_LLVM_FETCH=OFF
+    
+    - name: Build
+      run: cmake --build build --config ${{ matrix.build_type }}
+    
+    - name: Run tests
+      working-directory: build
+      run: ctest -C ${{ matrix.build_type }} --output-on-failure --verbose
+    
+    - name: Upload test results on failure
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results-${{ matrix.os }}-${{ matrix.build_type }}
+        path: |
+          build/Testing/Temporary/LastTest.log
+          build/Testing/Temporary/LastTestsFailed.log
+        if-no-files-found: ignore

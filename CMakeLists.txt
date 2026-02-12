@@ -56,6 +56,38 @@ if(LLVM_FOUND AND Clang_FOUND)
         set(CLANG_INCLUDE_DIRS "${LLVM_INSTALL_PREFIX}/include")
         message(STATUS "Derived Clang Include Dir: ${CLANG_INCLUDE_DIRS}")
     endif()
+elseif(LLVM_FOUND)
+    # LLVM CMake config found but ClangConfig.cmake is missing.
+    # This is common on Windows with binary LLVM releases (e.g., Chocolatey).
+    # Derive Clang include/library paths from the LLVM installation prefix.
+    message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION} (Clang CMake config not found, deriving paths)")
+    message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
+
+    get_filename_component(LLVM_INSTALL_PREFIX "${LLVM_DIR}/../../.." ABSOLUTE)
+
+    if(NOT LLVM_INCLUDE_DIRS)
+        set(LLVM_INCLUDE_DIRS "${LLVM_INSTALL_PREFIX}/include")
+    endif()
+    set(CLANG_INCLUDE_DIRS ${LLVM_INCLUDE_DIRS})
+
+    llvm_map_components_to_libnames(LLVM_LIBS Support Core)
+
+    set(_llvm_lib_hints "${LLVM_INSTALL_PREFIX}/lib" ${LLVM_LIBRARY_DIRS})
+
+    set(XCCMETA_CLANG_LIBS)
+    foreach(_lib libclang clangBasic clangLex clangFrontend)
+        find_library(_found_${_lib} NAMES ${_lib} HINTS ${_llvm_lib_hints})
+        if(_found_${_lib})
+            list(APPEND XCCMETA_CLANG_LIBS ${_found_${_lib}})
+        else()
+            list(APPEND XCCMETA_CLANG_LIBS ${_lib})
+        endif()
+    endforeach()
+    list(APPEND XCCMETA_CLANG_LIBS ${LLVM_LIBS})
+
+    message(STATUS "LLVM Include Dirs: ${LLVM_INCLUDE_DIRS}")
+    message(STATUS "Clang Include Dirs: ${CLANG_INCLUDE_DIRS}")
+    message(STATUS "Clang Libraries: ${XCCMETA_CLANG_LIBS}")
 elseif(XCCMETA_LLVM_FETCH)
     message(STATUS "LLVM/Clang not found, fetching from source (this may take a while)...")
     

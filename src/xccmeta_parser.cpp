@@ -173,13 +173,24 @@ namespace xccmeta {
       n->set_display_name(cx_string_to_std(clang_getCursorDisplayName(cursor)));
       n->set_usr(cx_string_to_std(clang_getCursorUSR(cursor)));
 
+      CXCursorKind kind = clang_getCursorKind(cursor);
+
       // Mangled name (if available)
-      CXString mangled = clang_Cursor_getMangling(cursor);
-      const char* mangled_str = clang_getCString(mangled);
-      if (mangled_str && mangled_str[0] != '\0') {
-        n->set_mangled_name(mangled_str);
+      // Only call clang_Cursor_getMangling for cursor kinds that support it.
+      // Calling it on ParmDecl (e.g., from function pointer type children) can
+      // segfault on Unix/macOS because the mangling context expects an enclosing
+      // FunctionDecl that doesn't exist for parameters of a function pointer type.
+      if (kind == CXCursor_FunctionDecl || kind == CXCursor_CXXMethod ||
+          kind == CXCursor_Constructor || kind == CXCursor_Destructor ||
+          kind == CXCursor_ConversionFunction || kind == CXCursor_FunctionTemplate ||
+          kind == CXCursor_VarDecl) {
+        CXString mangled = clang_Cursor_getMangling(cursor);
+        const char* mangled_str = clang_getCString(mangled);
+        if (mangled_str && mangled_str[0] != '\0') {
+          n->set_mangled_name(mangled_str);
+        }
+        clang_disposeString(mangled);
       }
-      clang_disposeString(mangled);
 
       // Build qualified name by traversing semantic parents
       std::string qualified;
@@ -225,7 +236,6 @@ namespace xccmeta {
       n->set_definition(clang_isCursorDefinition(cursor) != 0);
 
       // Method/function properties
-      CXCursorKind kind = clang_getCursorKind(cursor);
       if (kind == CXCursor_CXXMethod || kind == CXCursor_FunctionDecl ||
           kind == CXCursor_Constructor || kind == CXCursor_Destructor) {
         n->set_virtual(clang_CXXMethod_isVirtual(cursor) != 0);
@@ -302,6 +312,7 @@ namespace xccmeta {
       if (brief_comment_str && brief_comment_str[0] != '\0') {
         n->set_brief_comment(brief_comment_str);
       }
+      clang_disposeString(brief_comment);
 
       // Parse tags from attributes (go over children)
       clang_visitChildren(cursor, [](CXCursor c, CXCursor parent, CXClientData client_data) {

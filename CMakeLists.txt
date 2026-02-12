@@ -106,8 +106,17 @@ else()
         "/opt/homebrew/opt/llvm@18"
     )
 
+    # Check for both the C API header AND the C++ API headers.
+    # Binary LLVM packages (e.g., Chocolatey on Windows) typically only ship
+    # clang-c/Index.h but NOT the Clang C++ headers (clang/Basic/*.h, etc.).
     find_path(XCCMETA_LLVM_INCLUDE_DIR
         NAMES clang-c/Index.h
+        PATHS ${_llvm_search_paths}
+        PATH_SUFFIXES include
+        NO_DEFAULT_PATH
+    )
+    find_path(XCCMETA_CLANG_CPP_INCLUDE_DIR
+        NAMES clang/Basic/Diagnostic.h
         PATHS ${_llvm_search_paths}
         PATH_SUFFIXES include
         NO_DEFAULT_PATH
@@ -118,17 +127,25 @@ else()
         PATH_SUFFIXES lib
         NO_DEFAULT_PATH
     )
+    find_library(XCCMETA_CLANG_BASIC_LIB
+        NAMES clangBasic
+        PATHS ${_llvm_search_paths}
+        PATH_SUFFIXES lib
+        NO_DEFAULT_PATH
+    )
 
-    if(XCCMETA_LLVM_INCLUDE_DIR AND XCCMETA_LIBCLANG_LIB)
+    if(XCCMETA_LLVM_INCLUDE_DIR AND XCCMETA_CLANG_CPP_INCLUDE_DIR AND XCCMETA_LIBCLANG_LIB AND XCCMETA_CLANG_BASIC_LIB)
         message(STATUS "Found LLVM/Clang via manual detection (no CMake config files):")
-        message(STATUS "  Include dir: ${XCCMETA_LLVM_INCLUDE_DIR}")
-        message(STATUS "  libclang:    ${XCCMETA_LIBCLANG_LIB}")
+        message(STATUS "  Include dir (C API):   ${XCCMETA_LLVM_INCLUDE_DIR}")
+        message(STATUS "  Include dir (C++ API): ${XCCMETA_CLANG_CPP_INCLUDE_DIR}")
+        message(STATUS "  libclang:              ${XCCMETA_LIBCLANG_LIB}")
 
-        set(LLVM_INCLUDE_DIRS ${XCCMETA_LLVM_INCLUDE_DIR})
-        set(CLANG_INCLUDE_DIRS ${XCCMETA_LLVM_INCLUDE_DIR})
+        set(LLVM_INCLUDE_DIRS ${XCCMETA_LLVM_INCLUDE_DIR} ${XCCMETA_CLANG_CPP_INCLUDE_DIR})
+        list(REMOVE_DUPLICATES LLVM_INCLUDE_DIRS)
+        set(CLANG_INCLUDE_DIRS ${LLVM_INCLUDE_DIRS})
         set(XCCMETA_CLANG_LIBS ${XCCMETA_LIBCLANG_LIB})
 
-        # Try to find additional Clang/LLVM static libraries (not always available)
+        # Find additional Clang/LLVM static libraries
         get_filename_component(_llvm_lib_dir "${XCCMETA_LIBCLANG_LIB}" DIRECTORY)
         foreach(_lib clangBasic clangLex clangFrontend LLVMSupport LLVMCore)
             find_library(_found_manual_${_lib} NAMES ${_lib} HINTS ${_llvm_lib_dir})
@@ -150,14 +167,19 @@ else()
         set(LLVM_INCLUDE_EXAMPLES OFF CACHE BOOL "" FORCE)
         set(LLVM_INCLUDE_BENCHMARKS OFF CACHE BOOL "" FORCE)
         set(LLVM_INCLUDE_DOCS OFF CACHE BOOL "" FORCE)
+        set(LLVM_BUILD_TOOLS OFF CACHE BOOL "" FORCE)
+        set(LLVM_BUILD_UTILS OFF CACHE BOOL "" FORCE)
+        set(LLVM_ENABLE_BINDINGS OFF CACHE BOOL "" FORCE)
         set(CLANG_INCLUDE_TESTS OFF CACHE BOOL "" FORCE)
         set(CLANG_INCLUDE_DOCS OFF CACHE BOOL "" FORCE)
+        set(CLANG_BUILD_TOOLS OFF CACHE BOOL "" FORCE)
+        set(CLANG_ENABLE_STATIC_ANALYZER OFF CACHE BOOL "" FORCE)
+        set(CLANG_ENABLE_ARCMT OFF CACHE BOOL "" FORCE)
 
         FetchContent_Declare(
             llvm-project
-            GIT_REPOSITORY https://github.com/llvm/llvm-project.git
-            GIT_TAG llvmorg-18.1.8
-            GIT_SHALLOW TRUE
+            URL https://github.com/llvm/llvm-project/releases/download/llvmorg-18.1.8/llvm-project-18.1.8.src.tar.xz
+            DOWNLOAD_EXTRACT_TIMESTAMP TRUE
             SOURCE_SUBDIR llvm
         )
         FetchContent_MakeAvailable(llvm-project)

@@ -1,5 +1,11 @@
 # xccmeta
 
+[![Language](https://img.shields.io/badge/language-C%2B%2B20-00599C)](https://github.com/luppichristian/xccmeta)
+[![Build](https://img.shields.io/badge/build-CMake-orange)](https://github.com/luppichristian/xccmeta)
+[![Docs](https://img.shields.io/badge/docs-online-blue)](https://luppichristian.github.io/xccmeta/)
+[![CI](https://img.shields.io/github/actions/workflow/status/luppichristian/xccmeta/ci.yml?branch=main&label=ci)](https://github.com/luppichristian/xccmeta/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
 A C++ metadata extraction library built on libclang for code parsing, reflection, and build-time code generation.
 
 xccmeta parses C/C++ source code into a queryable AST, extracts type information and custom
